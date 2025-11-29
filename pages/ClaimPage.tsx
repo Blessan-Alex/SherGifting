@@ -71,74 +71,7 @@ const ClaimPage: React.FC = () => {
         return matches;
     }, [giftInfo?.recipient_email, user?.email]);
 
-    // Auto-claim after user signs up/logs in
-    useEffect(() => {
-        const autoClaimGift = async () => {
-            // Don't auto-claim if we've already attempted and failed
-            if (hasAttemptedClaim || emailMismatch || isClaiming || claimSuccess) {
-                console.log('⏸️ Skipping auto-claim - already attempted or in progress');
-                return;
-            }
-
-            console.log('🔍 Auto-claim check:', {
-                authenticated,
-                hasUser: !!user,
-                hasWallet: !!user?.wallet_address,
-                hasGiftInfo: !!giftInfo,
-                giftStatus: giftInfo?.status,
-                isClaiming,
-                claimSuccess,
-                hasAttemptedClaim,
-                emailMismatch
-            });
-            
-            // Only auto-claim if:
-            // 1. User is authenticated
-            // 2. User data is loaded
-            // 3. Gift info is loaded
-            // 4. Gift hasn't been claimed yet
-            // 5. Not already in the claiming process
-            // 6. Not already successfully claimed
-            // 7. Claim token is available
-            // 8. Email matches recipient (NEW)
-            // 9. Haven't already attempted claim (NEW)
-            if (authenticated && user && user.wallet_address && giftInfo && giftInfo.status === 'SENT' && !isClaiming && !claimSuccess && claimToken && !hasAttemptedClaim) {
-                // Check email match BEFORE attempting claim
-                if (!checkEmailMatch()) {
-                    console.error('❌ Email mismatch - cannot auto-claim');
-                    setEmailMismatch(true);
-                    setError('This gift is not for your account. It can only be claimed by the recipient email address.');
-                    setHasAttemptedClaim(true); // Mark as attempted to prevent retries
-                    return;
-                }
-                
-                console.log('🎁 Auto-claiming gift for newly signed-in user...');
-                console.log('User wallet:', user.wallet_address);
-                console.log('Claim token:', claimToken.substring(0, 8) + '...');
-                setHasAttemptedClaim(true); // Set BEFORE calling handleClaim to prevent multiple calls
-                handleClaim();
-            } else {
-                console.log('⏸️ Auto-claim conditions not met');
-            }
-        };
-
-        // Small delay to ensure user data is fully loaded
-        const timer = setTimeout(() => {
-            autoClaimGift();
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [authenticated, user, giftInfo, isClaiming, claimSuccess, claimToken, hasAttemptedClaim, emailMismatch, handleClaim, checkEmailMatch]); // Add handleClaim and checkEmailMatch to prevent looping
-
-    const handleLogin = async () => {
-        try {
-            await login();
-        } catch (err: any) {
-            console.error('Login error:', err);
-            setError('Failed to sign in. Please try again.');
-        }
-    };
-
+    // ✅ MOVE handleClaim BEFORE the useEffect that uses it
     const handleClaim = useCallback(async () => {
         console.log('🎯 handleClaim called', { 
             authenticated, 
@@ -217,6 +150,74 @@ const ClaimPage: React.FC = () => {
             setIsClaiming(false);
         }
     }, [authenticated, user, claimToken, checkEmailMatch, refreshUser]);
+
+    // Auto-claim after user signs up/logs in
+    useEffect(() => {
+        const autoClaimGift = async () => {
+            // Don't auto-claim if we've already attempted and failed
+            if (hasAttemptedClaim || emailMismatch || isClaiming || claimSuccess) {
+                console.log('⏸️ Skipping auto-claim - already attempted or in progress');
+                return;
+            }
+
+            console.log('🔍 Auto-claim check:', {
+                authenticated,
+                hasUser: !!user,
+                hasWallet: !!user?.wallet_address,
+                hasGiftInfo: !!giftInfo,
+                giftStatus: giftInfo?.status,
+                isClaiming,
+                claimSuccess,
+                hasAttemptedClaim,
+                emailMismatch
+            });
+            
+            // Only auto-claim if:
+            // 1. User is authenticated
+            // 2. User data is loaded
+            // 3. Gift info is loaded
+            // 4. Gift hasn't been claimed yet
+            // 5. Not already in the claiming process
+            // 6. Not already successfully claimed
+            // 7. Claim token is available
+            // 8. Email matches recipient (NEW)
+            // 9. Haven't already attempted claim (NEW)
+            if (authenticated && user && user.wallet_address && giftInfo && giftInfo.status === 'SENT' && !isClaiming && !claimSuccess && claimToken && !hasAttemptedClaim) {
+                // Check email match BEFORE attempting claim
+                if (!checkEmailMatch()) {
+                    console.error('❌ Email mismatch - cannot auto-claim');
+                    setEmailMismatch(true);
+                    setError('This gift is not for your account. It can only be claimed by the recipient email address.');
+                    setHasAttemptedClaim(true); // Mark as attempted to prevent retries
+                    return;
+                }
+                
+                console.log('🎁 Auto-claiming gift for newly signed-in user...');
+                console.log('User wallet:', user.wallet_address);
+                console.log('Claim token:', claimToken.substring(0, 8) + '...');
+                setHasAttemptedClaim(true); // Set BEFORE calling handleClaim to prevent multiple calls
+                handleClaim();
+            } else {
+                console.log('⏸️ Auto-claim conditions not met');
+            }
+        };
+
+        // Small delay to ensure user data is fully loaded
+        const timer = setTimeout(() => {
+            autoClaimGift();
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [authenticated, user, giftInfo, isClaiming, claimSuccess, claimToken, hasAttemptedClaim, emailMismatch, handleClaim, checkEmailMatch]); // Add handleClaim and checkEmailMatch to prevent looping
+
+    const handleLogin = async () => {
+        try {
+            await login();
+        } catch (err: any) {
+            console.error('Login error:', err);
+            setError('Failed to sign in. Please try again.');
+        }
+    };
 
     // Show progress loader during auth loading
     if (authLoading) {
