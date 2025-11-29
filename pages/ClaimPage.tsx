@@ -350,7 +350,6 @@ const ClaimPage: React.FC = () => {
             <div className="min-h-screen flex items-center justify-center p-4">
                 <GlassCard className="max-w-md w-full">
                     <div className="text-center">
-                        <Stepper currentStep={2} completedSteps={[1]} />
                         <div className="mt-8">
                             <Spinner size="8" color="border-[#06B6D4]" />
                             <p className="text-white font-medium mt-4">Claiming your gift...</p>
