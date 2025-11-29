@@ -1566,7 +1566,27 @@ async function processGiftClaim(
             JSON.parse(process.env.FEE_PAYER_PRIVATE_KEY)
           );
           feePayer = Keypair.fromSecretKey(feePayerPrivateKey);
-          console.log('✅ Using fee payer:', feePayer.publicKey.toBase58());
+          
+          // ✅ Check fee payer balance before using it
+          const feePayerBalance = await connection.getBalance(feePayer.publicKey);
+          const MIN_BALANCE_REQUIRED = 0.01 * LAMPORTS_PER_SOL; // 0.01 SOL minimum
+          
+          if (feePayerBalance < MIN_BALANCE_REQUIRED) {
+            console.warn(`⚠️ Fee payer has insufficient balance (${feePayerBalance / LAMPORTS_PER_SOL} SOL). Checking TipLink...`);
+            
+            // Check if TipLink has SOL for fallback
+            const tiplinkSOL = await connection.getBalance(tipLink.keypair.publicKey);
+            const MIN_SOL_FOR_ATA = 0.002 * LAMPORTS_PER_SOL; // ~0.002 SOL for ATA creation
+            
+            if (tiplinkSOL < MIN_SOL_FOR_ATA) {
+              throw new Error(`Neither fee payer nor TipLink has sufficient SOL. Fee payer: ${feePayerBalance / LAMPORTS_PER_SOL} SOL, TipLink: ${tiplinkSOL / LAMPORTS_PER_SOL} SOL. Need at least 0.002 SOL for ATA creation.`);
+            }
+            
+            console.warn(`⚠️ Using TipLink as fallback (has ${tiplinkSOL / LAMPORTS_PER_SOL} SOL)`);
+            feePayer = null; // Don't use fee payer, let TipLink pay
+          } else {
+            console.log(`✅ Using fee payer: ${feePayer.publicKey.toBase58()} (Balance: ${feePayerBalance / LAMPORTS_PER_SOL} SOL)`);
+          }
         } catch (error) {
           console.warn('⚠️ Failed to load fee payer, TipLink will pay fees');
         }
@@ -1635,7 +1655,32 @@ async function processGiftClaim(
         transaction,
         signers,
         { commitment: 'confirmed' }
-      );
+      ).catch(async (error: any) => {
+        // Enhanced error logging for transaction failures
+        console.error('❌ Transaction failed:', error);
+        
+        if (error.message?.includes('simulation failed') || error.message?.includes('Attempt to debit')) {
+          // Check balances for debugging
+          if (feePayer) {
+            const feePayerBalance = await connection.getBalance(feePayer.publicKey);
+            console.error(`💰 Fee payer balance: ${feePayerBalance / LAMPORTS_PER_SOL} SOL`);
+          }
+          
+          const tiplinkSOL = await connection.getBalance(tipLink.keypair.publicKey);
+          console.error(`💰 TipLink SOL balance: ${tiplinkSOL / LAMPORTS_PER_SOL} SOL`);
+          
+          if (!tokenInfo.isNative) {
+            try {
+              const tiplinkTokenBalance = await getAccount(connection, tiplinkATA);
+              console.error(`💰 TipLink token balance: ${Number(tiplinkTokenBalance.amount) / (10 ** gift.token_decimals)} ${gift.token_symbol}`);
+            } catch (tokenError) {
+              console.error(`💰 TipLink token account error:`, tokenError);
+            }
+          }
+        }
+        
+        throw error;
+      });
       
       // Update claimedAmount to reflect actual amount transferred (may be less due to precision)
       claimedAmount = Number(transferAmount) / (10 ** gift.token_decimals);

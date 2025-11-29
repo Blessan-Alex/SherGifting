@@ -229,6 +229,28 @@ const ClaimPage: React.FC = () => {
         return <ProgressLoader stage="preparing" message="Loading your gift..." />;
     }
 
+    // Show progress loader during claiming (prevent flickering by showing this before main card)
+    if (isClaiming && claimStep === 2) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <GlassCard className="max-w-md w-full">
+                    <div className="text-center">
+                        <div className="mt-8">
+                            <Spinner size="8" color="border-[#06B6D4]" />
+                            <p className="text-white font-medium mt-4">Claiming your gift...</p>
+                            <p className="text-[#94A3B8] text-sm mt-2">This may take a few moments</p>
+                        </div>
+                    </div>
+                </GlassCard>
+            </div>
+        );
+    }
+
+    // Don't show main card while claiming (prevent flickering)
+    if (isClaiming) {
+        return null;
+    }
+
     if (error && !giftInfo) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
@@ -342,23 +364,6 @@ const ClaimPage: React.FC = () => {
 
     if (!giftInfo) {
         return null;
-    }
-
-    // Show progress loader during claiming
-    if (isClaiming && claimStep === 2) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-4">
-                <GlassCard className="max-w-md w-full">
-                    <div className="text-center">
-                        <div className="mt-8">
-                            <Spinner size="8" color="border-[#06B6D4]" />
-                            <p className="text-white font-medium mt-4">Claiming your gift...</p>
-                            <p className="text-[#94A3B8] text-sm mt-2">This may take a few moments</p>
-                        </div>
-                    </div>
-                </GlassCard>
-            </div>
-        );
     }
 
     // Show email mismatch error prominently
