@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePrivy } from '@privy-io/react-auth';
@@ -11,7 +11,6 @@ import { Gift, Check, AlertTriangle, Lock, Clock, ArrowRight, ArrowUpRight, X, S
 import GlassCard from '../components/UI/GlassCard';
 import GlowButton from '../components/UI/GlowButton';
 import { triggerConfetti } from '../lib/confetti';
-import Stepper from '../components/UI/Stepper';
 
 const ClaimPage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -54,7 +53,7 @@ const ClaimPage: React.FC = () => {
     }, [claimToken]);
 
     // Helper function to check if user email matches recipient email
-    const checkEmailMatch = (): boolean => {
+    const checkEmailMatch = useCallback((): boolean => {
         if (!giftInfo?.recipient_email || !user?.email) {
             return false;
         }
@@ -70,7 +69,7 @@ const ClaimPage: React.FC = () => {
         });
         
         return matches;
-    };
+    }, [giftInfo?.recipient_email, user?.email]);
 
     // Auto-claim after user signs up/logs in
     useEffect(() => {
@@ -129,7 +128,7 @@ const ClaimPage: React.FC = () => {
         }, 1000);
 
         return () => clearTimeout(timer);
-    }, [authenticated, user, giftInfo, isClaiming, claimSuccess, claimToken, hasAttemptedClaim, emailMismatch]); // Trigger when auth state or user changes
+    }, [authenticated, user, giftInfo, isClaiming, claimSuccess, claimToken, hasAttemptedClaim, emailMismatch, handleClaim, checkEmailMatch]); // Add handleClaim and checkEmailMatch to prevent looping
 
     const handleLogin = async () => {
         try {
@@ -140,7 +139,7 @@ const ClaimPage: React.FC = () => {
         }
     };
 
-    const handleClaim = async () => {
+    const handleClaim = useCallback(async () => {
         console.log('🎯 handleClaim called', { 
             authenticated, 
             hasUser: !!user, 
@@ -217,7 +216,7 @@ const ClaimPage: React.FC = () => {
         } finally {
             setIsClaiming(false);
         }
-    };
+    }, [authenticated, user, claimToken, checkEmailMatch, refreshUser]);
 
     // Show progress loader during auth loading
     if (authLoading) {
@@ -459,13 +458,6 @@ const ClaimPage: React.FC = () => {
         <div className="min-h-screen flex items-center justify-center p-4 animate-fade-in-up">
             <div className="w-full max-w-md">
                 <GlassCard glow className="w-full">
-                    {/* Progress Stepper */}
-                    {!authenticated && (
-                        <div className="mb-4">
-                            <Stepper currentStep={1} completedSteps={[]} />
-                        </div>
-                    )}
-
                     {/* Gift Preview */}
                     <div className="text-center mb-4">
                         <motion.div
@@ -550,10 +542,6 @@ const ClaimPage: React.FC = () => {
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.4 }}
                             >
-                                <div className="mb-4">
-                                    <Stepper currentStep={2} completedSteps={[1]} />
-                                </div>
-                                
                                 <div className="bg-[#064E3B]/20 border border-[#10B981]/20 rounded-xl p-4 mb-4">
                                     <p className="text-[#10B981] text-sm text-center flex items-center justify-center gap-2 font-medium">
                                         <Check size={18} className="text-[#10B981]" />

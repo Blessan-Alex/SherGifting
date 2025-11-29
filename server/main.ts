@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { TipLink } from '@tiplink/api';
-import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
+import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction, Keypair } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, createTransferInstruction, TOKEN_PROGRAM_ID, getAccount } from '@solana/spl-token';
 import 'dotenv/config';
 import { authenticateToken, AuthRequest } from './authMiddleware';
@@ -1558,13 +1558,29 @@ async function processGiftClaim(
 
       const instructions = [];
       
+      // Get fee payer if available (to pay for ATA creation and transaction fees)
+      let feePayer: Keypair | null = null;
+      if (process.env.FEE_PAYER_PRIVATE_KEY) {
+        try {
+          const feePayerPrivateKey = Uint8Array.from(
+            JSON.parse(process.env.FEE_PAYER_PRIVATE_KEY)
+          );
+          feePayer = Keypair.fromSecretKey(feePayerPrivateKey);
+          console.log('✅ Using fee payer:', feePayer.publicKey.toBase58());
+        } catch (error) {
+          console.warn('⚠️ Failed to load fee payer, TipLink will pay fees');
+        }
+      }
+      
       // Create recipient's associated token account if it doesn't exist
       const recipientAccountInfo = await connection.getAccountInfo(recipientATA);
       if (!recipientAccountInfo) {
         console.log(`📝 Creating recipient token account: ${recipientATA.toBase58()}`);
+        // If we have a fee payer, use it to pay for ATA creation; otherwise TipLink pays
+        const payer = feePayer?.publicKey || tipLink.keypair.publicKey;
         instructions.push(
           createAssociatedTokenAccountInstruction(
-            tipLink.keypair.publicKey,
+            payer,
             recipientATA,
             recipientPubkey,
             mintPubkey
@@ -1601,10 +1617,23 @@ async function processGiftClaim(
       );
 
       const transaction = new Transaction().add(...instructions);
+      
+      // Set fee payer if available (pays for transaction fees)
+      if (feePayer) {
+        transaction.feePayer = feePayer.publicKey;
+        console.log('💰 Fee payer set for transaction');
+      }
+      
+      // Sign with both TipLink and fee payer (if available)
+      const signers = [tipLink.keypair];
+      if (feePayer) {
+        signers.push(feePayer);
+      }
+      
       signature = await sendAndConfirmTransaction(
         connection,
         transaction,
-        [tipLink.keypair],
+        signers,
         { commitment: 'confirmed' }
       );
       
