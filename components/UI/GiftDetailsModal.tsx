@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Mail, ArrowUpRight, ExternalLink } from 'lucide-react';
+import { X, Copy, ArrowUpRight } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GlowButton from './GlowButton';
 import StatusChip from './StatusChip';
@@ -54,7 +54,7 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
   };
 
   const handleCopyLink = async () => {
-    const claimUrl = `${window.location.origin}${gift.tiplink_url}`;
+    const claimUrl = gift.tiplink_url;
     try {
       await navigator.clipboard.writeText(claimUrl);
       showToast({
@@ -67,12 +67,6 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
         message: 'Failed to copy link',
       });
     }
-  };
-
-  const handleResendEmail = () => {
-    const subject = encodeURIComponent('You received a crypto gift!');
-    const body = encodeURIComponent(`You've received a gift! Claim it here: ${window.location.origin}${gift.tiplink_url}`);
-    window.open(`mailto:${gift.recipient_email}?subject=${subject}&body=${body}`);
   };
 
   return (
@@ -91,9 +85,9 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl"
+            className="w-full max-w-2xl max-h-[calc(100vh-2rem)]"
           >
-            <GlassCard className="relative max-h-[90vh] overflow-y-auto">
+            <GlassCard className="relative max-h-[calc(100vh-2rem)] overflow-y-auto">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2 id="gift-details-modal-title" className="text-2xl font-bold text-white">
@@ -185,7 +179,7 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
                   <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] block mb-2">Claim Link</span>
                   <div className="bg-[#0F172A] p-4 rounded-xl flex items-center justify-between border border-white/10">
                     <span className="text-[#FCD34D] text-sm truncate mr-4 font-mono flex-1">
-                      {window.location.origin}{gift.tiplink_url}
+                      {gift.tiplink_url}
                     </span>
                     <GlowButton
                       variant="secondary"
@@ -242,28 +236,6 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
                       <ArrowUpRight size={18} className="text-[#94A3B8] group-hover:text-[#06B6D4] transition-colors" />
                     </a>
                   )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-white/10">
-                  {gift.status === 'SENT' && (
-                    <GlowButton
-                      variant="secondary"
-                      onClick={handleResendEmail}
-                      icon={Mail}
-                      className="flex-1"
-                    >
-                      Resend Email
-                    </GlowButton>
-                  )}
-                  <GlowButton
-                    variant="cyan"
-                    onClick={handleCopyLink}
-                    icon={Copy}
-                    className="flex-1"
-                  >
-                    Copy Claim Link
-                  </GlowButton>
                 </div>
               </div>
             </GlassCard>

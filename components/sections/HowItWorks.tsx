@@ -8,7 +8,7 @@ const HowItWorks: React.FC = () => {
     {
       icon: Mail,
       title: 'Enter Email',
-      description: 'Type their email address and choose an amount. $100 in Bitcoin, USDC, or Gold.',
+      description: 'Type their email address and choose an amount. $100 in Bitcoin, USDC, or SOL.',
     },
     {
       icon: Sparkles,
