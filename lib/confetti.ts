@@ -47,6 +47,11 @@ export const triggerConfetti = () => {
 
   let animationFrame: number;
   const animate = () => {
+    // Check if canvas still exists
+    if (!document.body.contains(canvas)) {
+      return;
+    }
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     particles.forEach((particle, index) => {
@@ -68,8 +73,16 @@ export const triggerConfetti = () => {
     if (particles.length > 0) {
       animationFrame = requestAnimationFrame(animate);
     } else {
-      cancelAnimationFrame(animationFrame);
-      document.body.removeChild(canvas);
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      if (document.body.contains(canvas)) {
+        try {
+          document.body.removeChild(canvas);
+        } catch (e) {
+          // Canvas already removed, ignore error
+        }
+      }
     }
   };
 
@@ -78,7 +91,11 @@ export const triggerConfetti = () => {
   // Auto-remove after 1 second
   setTimeout(() => {
     if (document.body.contains(canvas)) {
-      document.body.removeChild(canvas);
+      try {
+        document.body.removeChild(canvas);
+      } catch (e) {
+        // Canvas already removed, ignore error
+      }
     }
   }, 1000);
 };

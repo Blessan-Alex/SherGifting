@@ -15,6 +15,7 @@ import Stepper from '../components/UI/Stepper';
 import GiftPreview from '../components/UI/GiftPreview';
 import TokenPicker from '../components/UI/TokenPicker';
 import QuickAmountChips from '../components/UI/QuickAmountChips';
+import SuggestedAmounts from '../components/UI/SuggestedAmounts';
 import BalanceResolutionPanel from '../components/UI/BalanceResolutionPanel';
 import ReviewStep from '../components/UI/ReviewStep';
 import GreetingCardModal from '../components/UI/GreetingCardModal';
@@ -22,6 +23,7 @@ import PageHeader from '../components/UI/PageHeader';
 import { useToast } from '../components/UI/ToastContainer';
 import { ArrowLeftIcon } from '../components/icons';
 import { OnrampCreditPopup } from '../components/OnrampCreditPopup';
+import { useTheme } from '../context/ThemeContext';
 import { CARD_UPSELL_PRICE } from '../lib/cardTemplates';
 import { triggerConfetti } from '../lib/confetti';
 import QRCode from 'qrcode';
@@ -39,6 +41,7 @@ const GiftPage: React.FC = () => {
     const { user, refreshUser, isLoading: authLoading } = useAuth();
     const { ready, authenticated, user: privyUser } = usePrivy();
     const { signAndSendTransaction } = useSignAndSendTransaction();
+    const { theme } = useTheme();
     const { wallets, ready: walletsReady } = useWallets();
     const navigate = useNavigate();
     const [tokens, setTokens] = useState<Token[]>([]);
@@ -125,6 +128,7 @@ const GiftPage: React.FC = () => {
     const [completedSteps, setCompletedSteps] = useState<number[]>([]);
     const [showGreetingCardModal, setShowGreetingCardModal] = useState(false);
     const [quickAmountSelected, setQuickAmountSelected] = useState<string | null>(null);
+    const [suggestedAmountSelected, setSuggestedAmountSelected] = useState<number | null>(null);
     const [showPreviewMobile, setShowPreviewMobile] = useState(false);
     const { showToast } = useToast();
     const location = useLocation();
@@ -542,7 +546,7 @@ const GiftPage: React.FC = () => {
             if (selectedToken.isNative) {
                 // For native SOL, fees are in SOL
                 if (totalAmount > userBalance) {
-                    setBalanceError(`Insufficient balance. You need ${totalAmount.toFixed(4)} SOL (${amountValue.toFixed(4)} SOL gift + ${totalFeeAmount.toFixed(4)} SOL fees). You have ${userBalance.toFixed(4)} SOL available.`);
+                    setBalanceError(`Insufficient balance. You need ${totalAmount.toFixed(4)} SOL (${amountValue.toFixed(4)} SOL gift + ${totalFeeAmount.toFixed(4)} SOL fees). You have ${userBalance.toFixed(4)} SOL available. Add ${(totalAmount - userBalance).toFixed(4)} SOL to continue.`);
                     return;
                 }
                 setBalanceError(null);
@@ -553,7 +557,7 @@ const GiftPage: React.FC = () => {
                     const tokenBalanceForGift = userBalance - amountValue;
                     if (tokenBalanceForGift < 0) {
                         // Not even enough for gift
-                        setBalanceError(`Insufficient ${selectedToken.symbol} balance. You need ${amountValue.toFixed(4)} ${selectedToken.symbol} for the gift. You have ${userBalance.toFixed(4)} ${selectedToken.symbol} available.`);
+                        setBalanceError(`Insufficient ${selectedToken.symbol} balance. You need ${amountValue.toFixed(4)} ${selectedToken.symbol} for the gift. You have ${userBalance.toFixed(4)} ${selectedToken.symbol} available. Add ${(amountValue - userBalance).toFixed(4)} ${selectedToken.symbol} to continue.`);
                         return;
                     }
                     
@@ -1622,6 +1626,7 @@ const GiftPage: React.FC = () => {
     // Handle quick amount selection
     const handleQuickAmountSelect = (amount: string | null) => {
         setQuickAmountSelected(amount);
+        setSuggestedAmountSelected(null); // Clear suggested amount when using quick chips
         if (amount && amount !== 'custom') {
             setUsdAmount(amount);
             if (tokenPrice && tokenPrice > 0) {
@@ -1633,6 +1638,18 @@ const GiftPage: React.FC = () => {
             setUsdAmount('');
             setTokenAmount('');
             setAmount('');
+        }
+    };
+
+    // Handle suggested amount selection
+    const handleSuggestedAmountSelect = (amount: number) => {
+        setSuggestedAmountSelected(amount);
+        setQuickAmountSelected(null); // Clear quick chips when using suggested
+        setUsdAmount(amount.toString());
+        if (tokenPrice && tokenPrice > 0) {
+            const tokens = (amount / tokenPrice).toFixed(6);
+            setTokenAmount(tokens);
+            setAmount(tokens);
         }
     };
 
@@ -1970,22 +1987,57 @@ const GiftPage: React.FC = () => {
                                                     error={recipientError || undefined}
                                                 />
 
-                                                <div className="text-sm">
+                                                <AnimatePresence mode="wait">
                                                     {isUsernameRecipient ? (
                                                         <>
                                                             {resolvingRecipient && (
-                                                                <p className="text-[#94A3B8]">Resolving username...</p>
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -5 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, y: -5 }}
+                                                                    className="flex items-center gap-2 text-sm"
+                                                                >
+                                                                    <motion.div
+                                                                        className="w-4 h-4 border-2 border-[#06B6D4] border-t-transparent rounded-full"
+                                                                        animate={{ rotate: 360 }}
+                                                                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                                                    />
+                                                                    <span className="text-[#94A3B8]">Resolving username...</span>
+                                                                </motion.div>
                                                             )}
                                                             {!resolvingRecipient && resolvedRecipient && (
-                                                                <p className="text-[#10B981]">✓ Username linked to {resolvedRecipient.email}</p>
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                    exit={{ opacity: 0, scale: 0.9 }}
+                                                                    className="flex items-center gap-2 text-sm"
+                                                                >
+                                                                    <motion.div
+                                                                        initial={{ scale: 0 }}
+                                                                        animate={{ scale: 1 }}
+                                                                        transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                                                                        className="w-5 h-5 rounded-full bg-[#10B981] flex items-center justify-center"
+                                                                    >
+                                                                        <Check size={14} className="text-white" />
+                                                                    </motion.div>
+                                                                    <span className="text-[#10B981] font-medium">
+                                                                        Username linked to {resolvedRecipient.email}
+                                                                    </span>
+                                                                </motion.div>
                                                             )}
-                                </>
-                            ) : (
+                                                        </>
+                                                    ) : (
                                                         trimmedRecipient && (
-                                                            <p className="text-[#94A3B8]">Gift will be sent to {trimmedRecipient}</p>
+                                                            <motion.p
+                                                                initial={{ opacity: 0 }}
+                                                                animate={{ opacity: 1 }}
+                                                                className="text-sm text-[#94A3B8]"
+                                                            >
+                                                                Gift will be sent to {trimmedRecipient}
+                                                            </motion.p>
                                                         )
                                                     )}
-                                </div>
+                                                </AnimatePresence>
 
                                                 <GlowButton
                                                     variant="cyan"
@@ -2035,11 +2087,20 @@ const GiftPage: React.FC = () => {
                                                     )}
                                                 </div>
 
+                                                {/* Suggested Holiday Amounts */}
+                                                {selectedToken && tokenPrice && tokenPrice > 0 && (
+                                                    <SuggestedAmounts
+                                                        onAmountSelect={handleSuggestedAmountSelect}
+                                                        selectedAmount={suggestedAmountSelected}
+                                                        tokenPrice={tokenPrice}
+                                                    />
+                                                )}
+
                                                 {/* Quick Amount Chips */}
                                                 {selectedToken && tokenPrice && tokenPrice > 0 && (
                                                     <div>
                                                         <label className="text-xs font-bold uppercase tracking-widest text-[#94A3B8] ml-1 mb-3 block">
-                                                            How much?
+                                                            Or choose an amount
                                                         </label>
                                                         <QuickAmountChips
                                                             onAmountSelect={handleQuickAmountSelect}
@@ -2066,31 +2127,55 @@ const GiftPage: React.FC = () => {
                                                         </div>
 
                                                         {/* Mode Toggle */}
-                                                        <div className="grid grid-cols-2 gap-0 bg-[#0F172A] p-1 rounded-xl mb-4 border border-white/10">
-                                                            <button
+                                                        <motion.div
+                                                            className="grid grid-cols-2 gap-0 bg-[#0F172A] p-1 rounded-xl mb-4 border border-white/10 relative overflow-hidden"
+                                                            layout
+                                                        >
+                                                            <motion.button
                                                                 type="button"
                                                                 onClick={() => handleModeSwitch('token')}
-                                                                className={`py-3 text-sm font-bold rounded-lg transition-all ${
+                                                                className={`py-3 text-sm font-bold rounded-lg transition-all relative z-10 ${
                                                                     amountMode === 'token'
-                                                                        ? 'bg-[#1E293B] text-white shadow-lg border border-white/10'
+                                                                        ? 'text-white shadow-lg'
                                                                         : 'text-[#64748B] hover:text-[#94A3B8]'
                                                                 }`}
+                                                                whileHover={amountMode !== 'token' ? { scale: 1.05 } : {}}
+                                                                whileTap={{ scale: 0.95 }}
                                                             >
                                                                 Token Amount
-                                                            </button>
-                                                            <button
+                                                            </motion.button>
+                                                            <motion.button
                                                                 type="button"
                                                                 onClick={() => handleModeSwitch('usd')}
                                                                 disabled={!tokenPrice || priceLoading}
-                                                                className={`py-3 text-sm font-bold rounded-lg transition-all ${
+                                                                className={`py-3 text-sm font-bold rounded-lg transition-all relative z-10 ${
                                                                     amountMode === 'usd'
-                                                                        ? 'bg-[#06B6D4] text-white shadow-lg border border-white/10'
+                                                                        ? 'text-white shadow-lg'
                                                                         : 'text-[#64748B] hover:text-[#94A3B8]'
                                                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                                whileHover={amountMode !== 'usd' && !(!tokenPrice || priceLoading) ? { scale: 1.05 } : {}}
+                                                                whileTap={{ scale: 0.95 }}
                                                             >
                                                                 USD Amount
-                                                            </button>
-                                                        </div>
+                                                            </motion.button>
+                                                            {/* Animated background slider */}
+                                                            <motion.div
+                                                                className="absolute inset-y-1 rounded-lg bg-gradient-to-r from-[#06B6D4] to-[#0891B2]"
+                                                                style={{
+                                                                    background: theme === 'christmas'
+                                                                        ? 'linear-gradient(90deg, #EB6A46 0%, #EF4444 100%)'
+                                                                        : theme === 'newyear'
+                                                                        ? 'linear-gradient(90deg, #FCD34D 0%, #F59E0B 100%)'
+                                                                        : 'linear-gradient(90deg, #06B6D4 0%, #0891B2 100%)',
+                                                                }}
+                                                                layout
+                                                                animate={{
+                                                                    left: amountMode === 'token' ? '0.25rem' : '50%',
+                                                                    right: amountMode === 'token' ? '50%' : '0.25rem',
+                                                                }}
+                                                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                                            />
+                                                        </motion.div>
 
                                                         {/* Amount Input */}
                                                         {amountMode === 'token' ? (
@@ -2195,7 +2280,7 @@ const GiftPage: React.FC = () => {
                                             >
                                                 <div>
                                                     <h2 id="step-3-title" className="text-2xl font-bold text-white mb-2">Make it personal</h2>
-                                                    <p className="text-sm text-[#94A3B8]">Add a greeting card and message (optional)</p>
+                                                    <p className="text-sm text-[#94A3B8]">Add a greeting card and message to make your gift extra special</p>
                                                 </div>
 
                                                 {/* Greeting Card Section */}
@@ -2218,35 +2303,65 @@ const GiftPage: React.FC = () => {
                                                     <label htmlFor="message" className="text-xs font-bold uppercase tracking-widest text-[#94A3B8] ml-1 mb-2 block">
                                                         Add a note (optional)
                                                     </label>
-                                                    <div className="space-y-2">
+                                                    <div className="space-y-3">
                                                         {/* Example Prompts */}
                                                         <div className="flex flex-wrap gap-2">
-                                                            {['Happy holidays 🎁', 'Thanks for always being there.', 'Thinking of you!'].map((prompt) => (
-                                                                <button
+                                                            {['Happy holidays 🎁', 'Thanks for always being there.', 'Thinking of you!'].map((prompt, index) => (
+                                                                <motion.button
                                                                     key={prompt}
                                                                     type="button"
                                                                     onClick={() => setMessage(prompt)}
+                                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                    transition={{ delay: index * 0.1 }}
+                                                                    whileHover={{ scale: 1.05, y: -2 }}
+                                                                    whileTap={{ scale: 0.95 }}
                                                                     className="px-3 py-1.5 rounded-lg text-xs bg-[#0F172A]/50 text-[#94A3B8] hover:bg-[#1E293B] hover:text-white border border-white/10 transition-all"
                                                                 >
                                                                     {prompt}
-                                                                </button>
+                                                                </motion.button>
                                                             ))}
                                                         </div>
-                                                        <textarea
-                                                            id="message"
-                                                            value={message}
-                                                            onChange={(e) => setMessage(e.target.value)}
-                                                            placeholder="Write a personal message..."
-                                                            rows={4}
-                                                            maxLength={500}
-                                                            className="w-full bg-[#0F172A]/50 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-[#475569] outline-none focus:border-[#BE123C] focus:ring-4 focus:ring-[#BE123C]/10 transition resize-none"
-                                                        />
-                                                        <div className="flex justify-between text-xs">
+                                                        <motion.div
+                                                            className="relative"
+                                                            whileFocus={{ scale: 1.01 }}
+                                                        >
+                                                            <textarea
+                                                                id="message"
+                                                                value={message}
+                                                                onChange={(e) => setMessage(e.target.value)}
+                                                                placeholder="Write a personal message..."
+                                                                rows={4}
+                                                                maxLength={500}
+                                                                className="w-full bg-[#0F172A]/50 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-[#475569] outline-none focus:border-[#BE123C] focus:ring-4 focus:ring-[#BE123C]/10 focus:bg-[#0F172A] transition-all resize-none"
+                                                                style={{
+                                                                    borderColor: message.length > 450 ? '#EF4444' : undefined,
+                                                                    ringColor: message.length > 450 ? 'rgba(239, 68, 68, 0.1)' : undefined,
+                                                                }}
+                                                            />
+                                                        </motion.div>
+                                                        <motion.div
+                                                            className="flex justify-between text-xs"
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                        >
                                                             <span className="text-[#64748B]">Character count</span>
-                                                            <span className={`${message.length > 450 ? 'text-[#EF4444]' : 'text-[#94A3B8]'}`}>
-                                                                {message.length}/500
-                                                            </span>
-                                                        </div>
+                                                            <motion.span
+                                                                className={`font-medium ${
+                                                                    message.length > 450
+                                                                        ? 'text-[#EF4444]'
+                                                                        : message.length > 400
+                                                                        ? 'text-[#FCD34D]'
+                                                                        : 'text-[#94A3B8]'
+                                                                }`}
+                                                                animate={message.length > 450 ? {
+                                                                    scale: [1, 1.1, 1],
+                                                                } : {}}
+                                                                transition={{ duration: 0.5 }}
+                                                            >
+                                                                {message.length} / 500
+                                                            </motion.span>
+                                                        </motion.div>
                                                     </div>
                                                 </div>
 

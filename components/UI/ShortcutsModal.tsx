@@ -1,9 +1,10 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GlowButton from './GlowButton';
 import { Shortcut } from '../../hooks/useKeyboardShortcuts';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -12,6 +13,20 @@ interface ShortcutsModalProps {
 }
 
 const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose, shortcuts }) => {
+  const { theme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
+
+  // Get theme-aware backdrop color
+  const getBackdropColor = () => {
+    if (theme === 'christmas') {
+      return 'rgba(235, 106, 70, 0.1)';
+    }
+    if (theme === 'newyear') {
+      return 'rgba(252, 211, 77, 0.1)';
+    }
+    return 'rgba(11, 17, 32, 0.9)';
+  };
+
   // Group shortcuts by category
   const groupedShortcuts = shortcuts.reduce((acc, shortcut) => {
     const category = shortcut.category || 'Other';
@@ -35,24 +50,32 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose, shortc
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Enhanced backdrop with blur animation */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            transition={{ duration: 0.3 }}
             onClick={onClose}
-            className="fixed inset-0 z-50 bg-[#0B1120]/90 backdrop-blur-sm"
+            className="fixed inset-0 z-50"
+            style={{
+              background: `linear-gradient(135deg, ${getBackdropColor()} 0%, rgba(11, 17, 32, 0.9) 100%)`,
+            }}
           />
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ 
+              duration: shouldReduceMotion ? 0.2 : 0.3,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
             onClick={(e) => e.stopPropagation()}
           >
-            <GlassCard className="max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <GlassCard className="max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col pointer-events-auto">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <h2 className="text-2xl font-bold text-white">Keyboard Shortcuts</h2>

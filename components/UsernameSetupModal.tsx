@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { usernameService } from '../services/api';
 import { AtSign, Check } from 'lucide-react';
 import GlassCard from './UI/GlassCard';
 import InputField from './UI/InputField';
 import GlowButton from './UI/GlowButton';
+import { useTheme } from '../context/ThemeContext';
 
 interface UsernameSetupModalProps {
   isOpen: boolean;
@@ -21,6 +23,19 @@ const UsernameSetupModal: React.FC<UsernameSetupModalProps> = ({
   const [available, setAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { theme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
+
+  // Get theme-aware backdrop color
+  const getBackdropColor = () => {
+    if (theme === 'christmas') {
+      return 'rgba(235, 106, 70, 0.1)';
+    }
+    if (theme === 'newyear') {
+      return 'rgba(252, 211, 77, 0.1)';
+    }
+    return 'rgba(0, 0, 0, 0.85)';
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -120,8 +135,35 @@ const UsernameSetupModal: React.FC<UsernameSetupModalProps> = ({
   const canSubmit = Boolean(username && available && !checking && !submitting);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 z-[2000] bg-[#0B1120]/85 backdrop-blur-md" role="dialog" aria-modal="true">
-      <GlassCard className="w-full max-w-md p-8 md:p-10 animate-scale-in">
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Enhanced backdrop with blur animation */}
+          <motion.div
+            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[2000]"
+            style={{
+              background: `linear-gradient(135deg, ${getBackdropColor()} 0%, rgba(11, 17, 32, 0.85) 100%)`,
+            }}
+            role="dialog"
+            aria-modal="true"
+          />
+          
+          {/* Modal content */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ 
+              duration: shouldReduceMotion ? 0.2 : 0.3,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            className="fixed inset-0 flex items-center justify-center p-4 z-[2000] pointer-events-none"
+          >
+            <GlassCard className="w-full max-w-md p-8 md:p-10 pointer-events-auto">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-[#BE123C]/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[#BE123C]/20 shadow-[0_0_15px_rgba(190,18,60,0.2)]">
             <AtSign strokeWidth={1.5} size={32} className="text-[#BE123C]" />
@@ -155,8 +197,15 @@ const UsernameSetupModal: React.FC<UsernameSetupModalProps> = ({
           </div>
 
           {error && (
-            <div className="bg-[#7F1D1D]/20 border border-[#EF4444]/20 rounded-lg p-3 text-xs text-[#EF4444]">
-              {error}
+            <div 
+              className="bg-[#7F1D1D]/20 border border-[#EF4444]/20 rounded-lg p-3 text-xs text-[#EF4444]"
+              role="alert"
+              aria-live="assertive"
+            >
+              <div className="flex items-start gap-2">
+                <span className="font-semibold">Error:</span>
+                <span>{error}</span>
+              </div>
             </div>
           )}
 
@@ -186,7 +235,10 @@ const UsernameSetupModal: React.FC<UsernameSetupModalProps> = ({
           </GlowButton>
         </form>
       </GlassCard>
-    </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 

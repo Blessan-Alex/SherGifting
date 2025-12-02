@@ -11,9 +11,43 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Montserrat', 'Inter', 'sans-serif'],
+        montserrat: ['Montserrat', 'sans-serif'],
       },
       colors: {
+        // Sher Brand
+        'sher-bg': 'var(--bg)',
+        'sher-bg-secondary': 'var(--bg-secondary)',
+        'sher-surface': 'var(--surface)',
+        'sher-surface-elevated': 'var(--surface-elevated)',
+        'sher-border': 'var(--border)',
+        'sher-border-hover': 'var(--border-hover)',
+        'sher-brand': 'var(--brand)',
+        'sher-brand-hover': 'var(--brand-hover)',
+        'sher-accent': 'var(--accent)',
+        'sher-cta': 'var(--cta)',
+        
+        // Holiday
+        'holiday-red': 'var(--holiday-red)',
+        'holiday-red-deep': 'var(--holiday-red-deep)',
+        'frost': 'var(--frost)',
+        'evergreen': 'var(--evergreen)',
+        'holiday-green': 'var(--holiday-green)',
+        'holiday-primary': 'var(--holiday-primary)',
+        'holiday-secondary': 'var(--holiday-secondary)',
+        'holiday-accent': 'var(--holiday-accent)',
+        
+        // Text
+        'text-primary': 'var(--text)',
+        'text-muted': 'var(--text-muted)',
+        'text-subtle': 'var(--text-subtle)',
+        
+        // States
+        'success': 'var(--success)',
+        'warning': 'var(--warning)',
+        'error': 'var(--error)',
+        
+        // Legacy colors (for backward compatibility)
         'deep-navy': '#0B1120',
         'glass-surface': '#1E293B',
         'cranberry': '#BE123C',
@@ -23,6 +57,29 @@ export default {
         'emerald': '#10B981',
         'dark-evergreen': '#064E3B',
         'cyan-accent': '#06B6D4',
+      },
+      boxShadow: {
+        'glow': 'var(--shadow-glow)',
+        'glow-holiday': 'var(--shadow-holiday)',
+        'frost': '0 0 20px rgba(255, 255, 255, 0.1)',
+        'sm': 'var(--shadow-sm)',
+        'md': 'var(--shadow-md)',
+        'lg': 'var(--shadow-lg)',
+      },
+      borderRadius: {
+        'sm': 'var(--radius-sm)',
+        'md': 'var(--radius-md)',
+        'lg': 'var(--radius-lg)',
+        'xl': 'var(--radius-xl)',
+        'full': 'var(--radius-full)',
+      },
+      transitionDuration: {
+        'fast': 'var(--transition-fast)',
+        'base': 'var(--transition-base)',
+        'slow': 'var(--transition-slow)',
+      },
+      transitionTimingFunction: {
+        'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
       animation: {
         'gradient-bg': 'gradient-bg 15s ease infinite',

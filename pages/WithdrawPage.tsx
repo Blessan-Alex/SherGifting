@@ -5,10 +5,12 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useSignAndSendTransaction, useWallets } from '@privy-io/react-auth/solana';
 import { heliusService, feeService, priceService, withdrawalService } from '../services/api';
 import { TokenBalance, Token } from '../types';
-import { motion } from 'framer-motion';
 import Spinner from '../components/Spinner';
-import { Building, ArrowUpRight, ChevronLeft, Check, Shield, AlertTriangle } from 'lucide-react';
+import { Building, ArrowUpRight, ChevronLeft, Check, Shield, AlertTriangle, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import GlassCard from '../components/UI/GlassCard';
+import FrostedCard from '../components/UI/FrostedCard';
+import { useTheme } from '../context/ThemeContext';
 import GlowButton from '../components/UI/GlowButton';
 import InputField from '../components/UI/InputField';
 import TokenPicker from '../components/UI/TokenPicker';
@@ -27,6 +29,8 @@ const WithdrawPage: React.FC = () => {
   const { wallets, ready: walletsReady } = useWallets();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
   const [selectedOption, setSelectedOption] = useState<'bank' | 'wallet' | null>(null);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -640,27 +644,72 @@ const WithdrawPage: React.FC = () => {
     onClick: () => void;
   }
 
+  // Get theme-aware colors
+  const getColors = () => {
+    if (theme === 'christmas') {
+      return {
+        primary: '#EB6A46',
+        secondary: '#EF4444',
+        glow: 'rgba(235, 106, 70, 0.3)',
+      };
+    }
+    if (theme === 'newyear') {
+      return {
+        primary: '#FCD34D',
+        secondary: '#F59E0B',
+        glow: 'rgba(252, 211, 77, 0.3)',
+      };
+    }
+    return {
+      primary: '#BE123C',
+      secondary: '#EF4444',
+      glow: 'rgba(190, 18, 60, 0.3)',
+    };
+  };
+
+  const colors = getColors();
+
   const OptionCard: React.FC<OptionCardProps> = ({ icon: Icon, title, desc, disabled = false, subtext, onClick }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`flex flex-col items-center justify-center p-8 rounded-3xl text-center h-64 w-full transition-all ${
-        disabled
-          ? 'bg-[#1E293B]/20 border-white/5 opacity-50 cursor-not-allowed'
-          : 'bg-[#1E293B]/40 border-white/10 hover:border-[#BE123C] hover:bg-[#1E293B]/60 group'
-      } border`}
+    <FrostedCard
+      variant="holiday"
+      hover={!disabled}
+      className={`text-center h-64 w-full ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      onClick={disabled ? undefined : onClick}
     >
-      <div className={`w-16 h-16 rounded-2xl bg-[#0F172A] flex items-center justify-center mb-6 transition-transform border border-white/5 ${
-        !disabled && 'group-hover:scale-110'
-      }`}>
-        <Icon size={32} className={disabled ? 'text-gray-600' : 'text-[#BE123C]'} />
-      </div>
-      {subtext && (
-        <span className="text-xs font-bold uppercase tracking-widest text-[#94A3B8] mb-2">{subtext}</span>
+      {/* Ribbon accent */}
+      {!disabled && (
+        <div
+          className="absolute top-0 left-0 right-0 h-1 z-10"
+          style={{
+            background: theme === 'christmas'
+              ? 'linear-gradient(90deg, #EB6A46 0%, #EF4444 50%, #EB6A46 100%)'
+              : theme === 'newyear'
+              ? 'linear-gradient(90deg, #FCD34D 0%, #F59E0B 50%, #FCD34D 100%)'
+              : 'linear-gradient(90deg, #BE123C 0%, #EF4444 50%, #BE123C 100%)',
+          }}
+        />
       )}
-      <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-      <p className={`text-sm px-4 ${disabled ? 'text-gray-600' : 'text-[#94A3B8]'}`}>{desc}</p>
-    </button>
+
+      <div className="relative z-10">
+        <motion.div
+          className={`w-16 h-16 rounded-2xl bg-[#0F172A] flex items-center justify-center mb-6 mx-auto border border-white/5`}
+          style={{
+            background: disabled ? undefined : `linear-gradient(135deg, ${colors.primary}20 0%, ${colors.secondary}20 100%)`,
+          }}
+          whileHover={!disabled && !shouldReduceMotion ? {
+            scale: 1.1,
+            boxShadow: `0 0 20px ${colors.glow}`,
+          } : {}}
+        >
+          <Icon size={32} style={{ color: disabled ? '#64748B' : colors.primary }} />
+        </motion.div>
+        {subtext && (
+          <span className="text-xs font-bold uppercase tracking-widest text-[#94A3B8] mb-2 block">{subtext}</span>
+        )}
+        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+        <p className={`text-sm px-4 ${disabled ? 'text-[#64748B]' : 'text-[#94A3B8]'}`}>{desc}</p>
+      </div>
+    </FrostedCard>
   );
 
   const renderContent = () => {
@@ -741,10 +790,22 @@ const WithdrawPage: React.FC = () => {
             onStepClick={handleStepClick}
           />
 
-        <GlassCard>
-            <div className="space-y-6">
-              {/* Step 1: Select Token */}
-              {currentStep === 1 && (
+        <FrostedCard variant="holiday" className="relative overflow-hidden">
+          {/* Ribbon accent */}
+          <div
+            className="absolute top-0 left-0 right-0 h-1 z-10"
+            style={{
+              background: theme === 'christmas'
+                ? 'linear-gradient(90deg, #EB6A46 0%, #EF4444 50%, #EB6A46 100%)'
+                : theme === 'newyear'
+                ? 'linear-gradient(90deg, #FCD34D 0%, #F59E0B 50%, #FCD34D 100%)'
+                : 'linear-gradient(90deg, #06B6D4 0%, #0891B2 50%, #06B6D4 100%)',
+            }}
+          />
+
+          <div className="space-y-6 relative z-10">
+            {/* Step 1: Select Token */}
+            {currentStep === 1 && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1029,7 +1090,7 @@ const WithdrawPage: React.FC = () => {
                 </motion.div>
               )}
             </div>
-          </GlassCard>
+          </FrostedCard>
         </div>
       );
     }

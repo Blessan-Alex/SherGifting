@@ -1,110 +1,189 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 
 interface SkeletonLoaderProps {
-  type?: 'text' | 'card' | 'list-item' | 'table-row' | 'card-grid' | 'form-field' | 'page';
+  type?: 'text' | 'circle' | 'rect' | 'list-item';
   rows?: number;
   className?: string;
 }
 
 const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
-  type = 'text',
+  type = 'rect',
   rows = 1,
   className = '',
 }) => {
+  const { theme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
+
+  // Get theme-aware colors
+  const getColors = () => {
+    if (theme === 'christmas') {
+      return {
+        shimmer: 'linear-gradient(90deg, rgba(235, 106, 70, 0.1) 0%, rgba(235, 106, 70, 0.2) 50%, rgba(235, 106, 70, 0.1) 100%)',
+        base: 'rgba(30, 41, 59, 0.4)',
+      };
+    }
+    if (theme === 'newyear') {
+      return {
+        shimmer: 'linear-gradient(90deg, rgba(252, 211, 77, 0.1) 0%, rgba(252, 211, 77, 0.2) 50%, rgba(252, 211, 77, 0.1) 100%)',
+        base: 'rgba(30, 41, 59, 0.4)',
+      };
+    }
+    return {
+      shimmer: 'linear-gradient(90deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.2) 50%, rgba(6, 182, 212, 0.1) 100%)',
+      base: 'rgba(30, 41, 59, 0.4)',
+    };
+  };
+
+  const colors = getColors();
+
+  const baseClasses = `rounded-xl ${className}`;
+  const shimmerClasses = shouldReduceMotion
+    ? ''
+    : 'animate-shimmer';
+
   if (type === 'list-item') {
     return (
-      <div className={`space-y-3 ${className}`}>
+      <div className="space-y-3">
         {Array.from({ length: rows }).map((_, index) => (
-          <div
+          <motion.div
             key={index}
-            className="h-16 bg-[#1E293B]/40 rounded-lg animate-pulse border border-white/5"
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (type === 'table-row') {
-    return (
-      <div className={`space-y-2 ${className}`}>
-        {Array.from({ length: rows }).map((_, index) => (
-          <div
-            key={index}
-            className="h-12 bg-[#1E293B]/40 rounded animate-pulse border border-white/5"
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (type === 'card') {
-    return (
-      <div className={`bg-[#1E293B]/40 rounded-xl p-6 animate-pulse border border-white/5 ${className}`}>
-        <div className="h-6 bg-white/10 rounded w-3/4 mb-4" />
-        <div className="h-4 bg-white/10 rounded w-full mb-2" />
-        <div className="h-4 bg-white/10 rounded w-5/6" />
-      </div>
-    );
-  }
-
-  if (type === 'card-grid') {
-    return (
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${className}`}>
-        {Array.from({ length: rows || 3 }).map((_, index) => (
-          <div
-            key={index}
-            className="bg-[#1E293B]/40 rounded-xl p-6 animate-pulse border border-white/5"
+            className={`h-16 ${baseClasses}`}
+            style={{
+              background: colors.base,
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: index * 0.1 }}
           >
-            <div className="h-6 bg-white/10 rounded w-3/4 mb-4" />
-            <div className="h-4 bg-white/10 rounded w-full mb-2" />
-            <div className="h-4 bg-white/10 rounded w-5/6" />
-          </div>
+            {!shouldReduceMotion && (
+              <motion.div
+                className={`h-full w-full ${shimmerClasses}`}
+                style={{
+                  background: colors.shimmer,
+                  backgroundSize: '200% 100%',
+                }}
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+              />
+            )}
+          </motion.div>
         ))}
       </div>
     );
   }
 
-  if (type === 'form-field') {
+  if (type === 'circle') {
     return (
-      <div className={`space-y-4 ${className}`}>
+      <motion.div
+        className={`w-12 h-12 rounded-full ${baseClasses}`}
+        style={{
+          background: colors.base,
+        }}
+        animate={!shouldReduceMotion ? {
+          scale: [1, 1.05, 1],
+        } : {}}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      >
+        {!shouldReduceMotion && (
+          <motion.div
+            className={`h-full w-full rounded-full ${shimmerClasses}`}
+            style={{
+              background: colors.shimmer,
+              backgroundSize: '200% 100%',
+            }}
+            animate={{
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          />
+        )}
+      </motion.div>
+    );
+  }
+
+  if (type === 'text') {
+    return (
+      <div className="space-y-2">
         {Array.from({ length: rows }).map((_, index) => (
-          <div key={index} className="space-y-2">
-            <div className="h-4 bg-white/10 rounded w-1/4 animate-pulse" />
-            <div className="h-10 bg-white/10 rounded w-full animate-pulse" />
-          </div>
+          <motion.div
+            key={index}
+            className={`h-4 ${baseClasses}`}
+            style={{
+              background: colors.base,
+              width: index === rows - 1 ? '60%' : '100%',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            {!shouldReduceMotion && (
+              <motion.div
+                className={`h-full w-full ${shimmerClasses}`}
+                style={{
+                  background: colors.shimmer,
+                  backgroundSize: '200% 100%',
+                }}
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+              />
+            )}
+          </motion.div>
         ))}
       </div>
     );
   }
 
-  if (type === 'page') {
-    return (
-      <div className={`space-y-6 ${className}`}>
-        <div className="h-10 bg-white/10 rounded w-1/3 animate-pulse" />
-        <div className="h-4 bg-white/10 rounded w-1/2 animate-pulse" />
-        <div className="space-y-4 mt-8">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-24 bg-white/10 rounded-lg animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Default: text
+  // Default: rect
   return (
-    <div className={`space-y-2 ${className}`}>
-      {Array.from({ length: rows }).map((_, index) => (
-        <div
-          key={index}
-          className="h-4 bg-[#1E293B]/40 rounded animate-pulse"
-          style={{ width: index === rows - 1 ? '75%' : '100%' }}
+    <motion.div
+      className={`h-24 ${baseClasses}`}
+      style={{
+        background: colors.base,
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {!shouldReduceMotion && (
+        <motion.div
+          className={`h-full w-full ${shimmerClasses}`}
+          style={{
+            background: colors.shimmer,
+            backgroundSize: '200% 100%',
+          }}
+          animate={{
+            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
         />
-      ))}
-    </div>
+      )}
+    </motion.div>
   );
 };
 
 export default SkeletonLoader;
-
-

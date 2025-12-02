@@ -1,11 +1,12 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X, Copy, ArrowUpRight } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GlowButton from './GlowButton';
 import StatusChip from './StatusChip';
 import { Gift } from '../../types';
 import { useToast } from './ToastContainer';
+import { useTheme } from '../../context/ThemeContext';
 
 interface GiftDetailsModalProps {
   isOpen: boolean;
@@ -19,6 +20,19 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
   gift,
 }) => {
   const { showToast } = useToast();
+  const { theme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
+
+  // Get theme-aware backdrop color
+  const getBackdropColor = () => {
+    if (theme === 'christmas') {
+      return 'rgba(235, 106, 70, 0.1)';
+    }
+    if (theme === 'newyear') {
+      return 'rgba(252, 211, 77, 0.1)';
+    }
+    return 'rgba(0, 0, 0, 0.6)';
+  };
 
   if (!isOpen || !gift) return null;
 
@@ -72,21 +86,36 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="gift-details-modal-title"
-        >
+        <>
+          {/* Enhanced backdrop with blur animation */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{
+              background: `linear-gradient(135deg, ${getBackdropColor()} 0%, rgba(0, 0, 0, 0.6) 100%)`,
+            }}
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gift-details-modal-title"
+          />
+          
+          {/* Modal content */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ 
+              duration: shouldReduceMotion ? 0.2 : 0.3,
+              ease: [0.16, 1, 0.3, 1],
+            }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl max-h-[calc(100vh-2rem)]"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
+            <div className="w-full max-w-2xl max-h-[calc(100vh-2rem)] pointer-events-auto">
             <GlassCard className="relative max-h-[calc(100vh-2rem)] overflow-y-auto">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -239,8 +268,9 @@ const GiftDetailsModal: React.FC<GiftDetailsModalProps> = ({
                 </div>
               </div>
             </GlassCard>
+            </div>
           </motion.div>
-        </div>
+        </>
       )}
     </AnimatePresence>
   );

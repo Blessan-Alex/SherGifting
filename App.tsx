@@ -9,6 +9,7 @@ import Spinner from './components/Spinner';
 import AnimatedBackground from './components/AnimatedBackground';
 import { usePrivyBrandingReplacer } from './hooks/usePrivyBrandingReplacer';
 import { ToastProvider } from './components/UI/ToastContainer';
+import { ThemeProvider } from './context/ThemeContext';
 
 const HomePage = React.lazy(() => import('./pages/HomePage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
@@ -56,17 +57,19 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <BrowserRouter>
-          <ToastProvider>
-            <div className="min-h-screen font-sans text-white selection:bg-[#BE123C] selection:text-white">
-              <AppContent />
-            </div>
-          </ToastProvider>
-        </BrowserRouter>
-      </AuthProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <BrowserRouter>
+            <ToastProvider>
+              <div className="min-h-screen font-sans text-white selection:bg-[#BE123C] selection:text-white">
+                <AppContent />
+              </div>
+            </ToastProvider>
+          </BrowserRouter>
+        </AuthProvider>
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 };
 
@@ -113,7 +116,7 @@ const AppContent: React.FC = () => {
 
 const RouteFallback = () => (
   <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-[#F8FAFC]">
-    <Spinner size="8" color="border-[#06B6D4]" />
+    <Spinner size="lg" color="border-[#06B6D4]" />
     <div className="text-center space-y-1">
       <p className="text-lg font-semibold">Loading module…</p>
       <p className="text-sm text-[#94A3B8]">

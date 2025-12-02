@@ -1,11 +1,14 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface GlassCardProps {
   children: React.ReactNode;
   className?: string;
   glow?: boolean;
   padding?: string;
-  variant?: 'default' | 'gift' | 'balance';
+  variant?: 'default' | 'gift' | 'balance' | 'holiday';
+  hover?: boolean; // Enable hover effects
+  onClick?: () => void;
 }
 
 const GlassCard: React.FC<GlassCardProps> = ({
@@ -13,42 +16,62 @@ const GlassCard: React.FC<GlassCardProps> = ({
   className = "",
   glow = false,
   padding = "p-6",
-  variant = 'default'
+  variant = 'default',
+  hover = true,
+  onClick,
 }) => {
+  const shouldReduceMotion = useReducedMotion();
+  
   const getVariantStyles = () => {
     switch (variant) {
       case 'gift':
         return {
-          background: 'bg-[#1E293B]/60',
-          border: 'border border-white/10',
-          decoration: 'before:absolute before:inset-0 before:border-t-2 before:border-[#BE123C]/30 before:rounded-t-3xl',
-          glow: 'bg-gradient-to-br from-[#BE123C]/5 via-[#06B6D4]/5 to-transparent'
+          background: 'bg-[var(--surface-elevated)]',
+          border: 'border border-[var(--border)]',
+          decoration: 'before:absolute before:inset-0 before:border-t-2 before:border-[var(--holiday-red)]/30 before:rounded-t-3xl',
+          glow: 'bg-gradient-to-br from-[var(--holiday-red)]/5 via-[var(--accent)]/5 to-transparent'
         };
       case 'balance':
         return {
-          background: 'bg-gradient-to-br from-[#1E293B]/70 to-[#0F172A]/70',
-          border: 'border border-white/10',
+          background: 'bg-gradient-to-br from-[var(--surface-elevated)] to-[var(--bg-secondary)]',
+          border: 'border border-[var(--border)]',
           decoration: '',
-          glow: 'bg-gradient-to-br from-[#FCD34D]/10 to-transparent'
+          glow: 'bg-gradient-to-br from-[var(--brand)]/10 to-transparent'
+        };
+      case 'holiday':
+        return {
+          background: 'bg-[var(--surface-elevated)]',
+          border: 'border border-[var(--holiday-primary)]/30',
+          decoration: '',
+          glow: 'bg-gradient-to-br from-[var(--holiday-primary)]/10 via-[var(--holiday-secondary)]/5 to-transparent'
         };
       default:
         return {
-          background: 'bg-[#1E293B]/60',
-          border: 'border border-white/10',
+          background: 'bg-[var(--surface)]',
+          border: 'border border-[var(--border)]',
           decoration: '',
-          glow: 'bg-gradient-to-br from-[#FCD34D]/5 to-transparent'
+          glow: 'bg-gradient-to-br from-[var(--brand)]/5 to-transparent'
         };
     }
   };
 
   const styles = getVariantStyles();
-  const shouldShowGlow = glow || variant === 'gift' || variant === 'balance';
+  const shouldShowGlow = glow || variant === 'gift' || variant === 'balance' || variant === 'holiday';
 
   return (
-    <div className={`relative ${styles.background} backdrop-blur-xl ${styles.border} shadow-2xl rounded-3xl overflow-hidden ${className}`}>
+    <motion.div 
+      className={`relative ${styles.background} backdrop-blur-xl ${styles.border} shadow-2xl rounded-3xl overflow-hidden ${className}`}
+      whileHover={hover && !shouldReduceMotion ? {
+        scale: 1.01,
+        boxShadow: 'var(--shadow-glow)',
+        borderColor: 'var(--border-hover)',
+      } : {}}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      onClick={onClick}
+    >
       <div className="absolute inset-0 border border-white/5 rounded-3xl pointer-events-none" />
       {variant === 'gift' && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#BE123C]/40 via-[#06B6D4]/40 to-[#BE123C]/40 rounded-t-3xl" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--holiday-red)]/40 via-[var(--accent)]/40 to-[var(--holiday-red)]/40 rounded-t-3xl" />
       )}
       {shouldShowGlow && (
         <div className={`absolute inset-0 ${styles.glow} opacity-50 pointer-events-none`} />
@@ -56,7 +79,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
       <div className={`relative z-10 ${padding}`}>
         {children}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

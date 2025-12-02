@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { usePrivy } from '@privy-io/react-auth';
 import { giftService } from '../services/api';
 import { Gift, GiftStatus } from '../types';
-import { motion } from 'framer-motion';
-import { History, ChevronLeft, ArrowUpRight, Gift as GiftIcon, Mail, Copy, Calendar, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { History, ChevronLeft, ArrowUpRight, Gift as GiftIcon, Mail, Copy, Calendar, DollarSign, Sparkles } from 'lucide-react';
 import GlassCard from '../components/UI/GlassCard';
+import FrostedCard from '../components/UI/FrostedCard';
+import { useTheme } from '../context/ThemeContext';
 import StatusChip from '../components/UI/StatusChip';
 import SearchBar from '../components/UI/SearchBar';
 import FilterChips from '../components/UI/FilterChips';
@@ -38,6 +40,8 @@ const HistoryPage: React.FC = () => {
   const { getAccessToken } = usePrivy();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
   
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -275,33 +279,70 @@ const HistoryPage: React.FC = () => {
       />
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setActiveTab('gifts')}
-          className={`px-6 py-3 rounded-xl font-medium transition-all ${
-            activeTab === 'gifts'
-              ? 'bg-[#BE123C] text-white shadow-lg'
-              : 'bg-[#1E293B]/60 text-[#94A3B8] hover:bg-[#1E293B]/80 border border-white/10'
-          }`}
-        >
-          Gifts ({gifts.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('transactions')}
-          className={`px-6 py-3 rounded-xl font-medium transition-all ${
-            activeTab === 'transactions'
-              ? 'bg-[#BE123C] text-white shadow-lg'
-              : 'bg-[#1E293B]/60 text-[#94A3B8] hover:bg-[#1E293B]/80 border border-white/10'
-          }`}
-        >
-          Transactions ({transactions.length})
-        </button>
-      </div>
+      <motion.div
+        className="flex gap-2 mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        {(['gifts', 'transactions'] as const).map((tab) => {
+          const isActive = activeTab === tab;
+          const count = tab === 'gifts' ? gifts.length : transactions.length;
+          const colors = theme === 'christmas'
+            ? { primary: '#EB6A46', glow: 'rgba(235, 106, 70, 0.3)' }
+            : theme === 'newyear'
+            ? { primary: '#FCD34D', glow: 'rgba(252, 211, 77, 0.3)' }
+            : { primary: '#BE123C', glow: 'rgba(190, 18, 60, 0.3)' };
+
+          return (
+            <motion.button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-3 rounded-xl font-medium transition-all relative overflow-hidden ${
+                isActive
+                  ? 'text-white shadow-lg'
+                  : 'text-[#94A3B8] hover:text-white bg-[#1E293B]/60 hover:bg-[#1E293B]/80 border border-white/10'
+              }`}
+              style={{
+                backgroundColor: isActive ? colors.primary : undefined,
+                boxShadow: isActive ? `0 0 20px ${colors.glow}` : undefined,
+              }}
+              whileHover={!shouldReduceMotion ? { scale: 1.05 } : {}}
+              whileTap={!shouldReduceMotion ? { scale: 0.95 } : {}}
+            >
+              {/* Ribbon accent for active */}
+              {isActive && (
+                <motion.div
+                  className="absolute top-0 left-0 right-0 h-1"
+                  style={{
+                    background: theme === 'christmas'
+                      ? 'linear-gradient(90deg, #EB6A46 0%, #EF4444 50%, #EB6A46 100%)'
+                      : theme === 'newyear'
+                      ? 'linear-gradient(90deg, #FCD34D 0%, #F59E0B 50%, #FCD34D 100%)'
+                      : 'linear-gradient(90deg, #BE123C 0%, #EF4444 50%, #BE123C 100%)',
+                  }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+              <span className="relative z-10 capitalize">
+                {tab} ({count})
+              </span>
+            </motion.button>
+          );
+        })}
+      </motion.div>
 
       {activeTab === 'gifts' ? (
-        <div className="space-y-6">
+        <motion.div
+          className="space-y-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           {/* Search and Filters */}
-          <GlassCard>
+          <FrostedCard variant="holiday">
             <div className="space-y-4">
               <SearchBar
                 value={searchQuery}
@@ -328,10 +369,10 @@ const HistoryPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </GlassCard>
+          </FrostedCard>
 
           {/* Gift List */}
-          <GlassCard>
+          <FrostedCard variant="holiday">
             {isLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 3 }).map((_, index) => (
@@ -362,15 +403,89 @@ const HistoryPage: React.FC = () => {
               />
             ) : viewMode === 'list' ? (
               <div className="space-y-3">
-                {filteredAndSortedGifts.map((gift, index) => (
-                  <motion.div
-                    key={gift.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => handleGiftClick(gift)}
-                    className="p-5 rounded-xl border border-white/10 hover:border-[#BE123C]/30 hover:bg-white/5 transition-all cursor-pointer group"
-                  >
+                <AnimatePresence>
+                  {filteredAndSortedGifts.map((gift, index) => {
+                    // Get ribbon color based on status
+                    const getRibbonColor = () => {
+                      const isExpired = gift.status === GiftStatus.SENT && gift.expires_at
+                        ? new Date(gift.expires_at) < new Date()
+                        : false;
+                      if (isExpired || gift.status === GiftStatus.EXPIRED) {
+                        return 'linear-gradient(90deg, #EF4444 0%, #DC2626 50%, #EF4444 100%)';
+                      }
+                      if (gift.status === GiftStatus.CLAIMED) {
+                        return 'linear-gradient(90deg, #10B981 0%, #059669 50%, #10B981 100%)';
+                      }
+                      if (gift.status === GiftStatus.SENT) {
+                        return theme === 'christmas'
+                          ? 'linear-gradient(90deg, #EB6A46 0%, #EF4444 50%, #EB6A46 100%)'
+                          : theme === 'newyear'
+                          ? 'linear-gradient(90deg, #FCD34D 0%, #F59E0B 50%, #FCD34D 100%)'
+                          : 'linear-gradient(90deg, #F59E0B 0%, #D97706 50%, #F59E0B 100%)';
+                      }
+                      return 'linear-gradient(90deg, #64748B 0%, #475569 50%, #64748B 100%)';
+                    };
+
+                    return (
+                      <FrostedCard
+                        key={gift.id}
+                        variant="holiday"
+                        hover
+                        className="cursor-pointer group relative overflow-hidden"
+                        onClick={() => handleGiftClick(gift)}
+                      >
+                        {/* Ribbon accent based on status */}
+                        <div
+                          className="absolute top-0 left-0 right-0 h-1 z-10"
+                          style={{
+                            background: getRibbonColor(),
+                          }}
+                        />
+
+                        {/* Sparkle effects on hover */}
+                        {!shouldReduceMotion && (
+                          <motion.div
+                            className="absolute inset-0 pointer-events-none"
+                            initial={{ opacity: 0 }}
+                            whileHover={{ opacity: 1 }}
+                          >
+                            {Array.from({ length: 4 }, (_, i) => {
+                              const angle = (i * 90) * (Math.PI / 180);
+                              const distance = 40;
+                              const x = Math.cos(angle) * distance;
+                              const y = Math.sin(angle) * distance;
+                              return (
+                                <motion.div
+                                  key={i}
+                                  className="absolute top-1/2 left-1/2 w-1.5 h-1.5 rounded-full"
+                                  style={{
+                                    background: theme === 'christmas' ? 'rgba(235, 106, 70, 0.3)' : theme === 'newyear' ? 'rgba(252, 211, 77, 0.3)' : 'rgba(6, 182, 212, 0.3)',
+                                    boxShadow: theme === 'christmas' ? '0 0 6px rgba(235, 106, 70, 0.3)' : theme === 'newyear' ? '0 0 6px rgba(252, 211, 77, 0.3)' : '0 0 6px rgba(6, 182, 212, 0.3)',
+                                  }}
+                                  animate={{
+                                    opacity: [0, 1, 0],
+                                    scale: [0, 1, 0],
+                                    x: [0, x, 0],
+                                    y: [0, y, 0],
+                                  }}
+                                  transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    delay: i * 0.2,
+                                    ease: 'easeInOut',
+                                  }}
+                                />
+                              );
+                            })}
+                          </motion.div>
+                        )}
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="relative z-10"
+                        >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         {/* Avatar */}
@@ -446,20 +561,97 @@ const HistoryPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                    </FrostedCard>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredAndSortedGifts.map((gift, index) => (
-                  <motion.div
-                    key={gift.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => handleGiftClick(gift)}
-                    className="p-5 rounded-xl border border-white/10 hover:border-[#BE123C]/30 hover:bg-white/5 transition-all cursor-pointer group"
-                  >
+                <AnimatePresence>
+                  {filteredAndSortedGifts.map((gift, index) => {
+                    // Get ribbon color based on status
+                    const getRibbonColor = () => {
+                      const isExpired = gift.status === GiftStatus.SENT && gift.expires_at
+                        ? new Date(gift.expires_at) < new Date()
+                        : false;
+                      if (isExpired || gift.status === GiftStatus.EXPIRED) {
+                        return 'linear-gradient(90deg, #EF4444 0%, #DC2626 50%, #EF4444 100%)';
+                      }
+                      if (gift.status === GiftStatus.CLAIMED) {
+                        return 'linear-gradient(90deg, #10B981 0%, #059669 50%, #10B981 100%)';
+                      }
+                      if (gift.status === GiftStatus.SENT) {
+                        return theme === 'christmas'
+                          ? 'linear-gradient(90deg, #EB6A46 0%, #EF4444 50%, #EB6A46 100%)'
+                          : theme === 'newyear'
+                          ? 'linear-gradient(90deg, #FCD34D 0%, #F59E0B 50%, #FCD34D 100%)'
+                          : 'linear-gradient(90deg, #F59E0B 0%, #D97706 50%, #F59E0B 100%)';
+                      }
+                      return 'linear-gradient(90deg, #64748B 0%, #475569 50%, #64748B 100%)';
+                    };
+
+                    return (
+                      <FrostedCard
+                        key={gift.id}
+                        variant="holiday"
+                        hover
+                        className="cursor-pointer group relative overflow-hidden"
+                        onClick={() => handleGiftClick(gift)}
+                      >
+                        {/* Ribbon accent based on status */}
+                        <div
+                          className="absolute top-0 left-0 right-0 h-1 z-10"
+                          style={{
+                            background: getRibbonColor(),
+                          }}
+                        />
+
+                        {/* Sparkle effects on hover */}
+                        {!shouldReduceMotion && (
+                          <motion.div
+                            className="absolute inset-0 pointer-events-none"
+                            initial={{ opacity: 0 }}
+                            whileHover={{ opacity: 1 }}
+                          >
+                            {Array.from({ length: 6 }, (_, i) => {
+                              const angle = (i * 60) * (Math.PI / 180);
+                              const distance = 50;
+                              const x = Math.cos(angle) * distance;
+                              const y = Math.sin(angle) * distance;
+                              return (
+                                <motion.div
+                                  key={i}
+                                  className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
+                                  style={{
+                                    background: theme === 'christmas' ? 'rgba(235, 106, 70, 0.3)' : theme === 'newyear' ? 'rgba(252, 211, 77, 0.3)' : 'rgba(6, 182, 212, 0.3)',
+                                    boxShadow: theme === 'christmas' ? '0 0 8px rgba(235, 106, 70, 0.3)' : theme === 'newyear' ? '0 0 8px rgba(252, 211, 77, 0.3)' : '0 0 8px rgba(6, 182, 212, 0.3)',
+                                  }}
+                                  animate={{
+                                    opacity: [0, 1, 0],
+                                    scale: [0, 1, 0],
+                                    x: [0, x, 0],
+                                    y: [0, y, 0],
+                                  }}
+                                  transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    delay: i * 0.15,
+                                    ease: 'easeInOut',
+                                  }}
+                                />
+                              );
+                            })}
+                          </motion.div>
+                        )}
+
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="relative z-10"
+                        >
                     <div className="flex flex-col gap-4">
                       {/* Header */}
                       <div className="flex items-center justify-between">
@@ -501,12 +693,15 @@ const HistoryPage: React.FC = () => {
                         <p className="text-[#94A3B8] text-xs italic line-clamp-2">"{gift.message}"</p>
                       )}
                     </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                    </FrostedCard>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
             )}
-          </GlassCard>
-        </div>
+          </FrostedCard>
+        </motion.div>
       ) : (
         <div className="space-y-6">
           <GlassCard>

@@ -1,16 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Gift, Sparkles, ArrowRight, Shield, Link2, Building2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import GlowButton from '../components/UI/GlowButton';
-import HolidayBackground from '../components/HolidayBackground';
-import CursorGlow from '../components/CursorGlow';
-import HeroGiftCard from '../components/HeroGiftCard';
+const HolidayBackground = React.lazy(() => import('../components/HolidayBackground'));
+const CursorGlow = React.lazy(() => import('../components/CursorGlow'));
+const HeroGiftCard = React.lazy(() => import('../components/HeroGiftCard'));
+import type { HeroGiftCardRef } from '../components/HeroGiftCard';
 import TheProblem from '../components/sections/TheProblem';
 import HowItWorks from '../components/sections/HowItWorks';
 import RecipientExperience from '../components/sections/RecipientExperience';
 import Comparison from '../components/sections/Comparison';
 import RiskReversal from '../components/sections/RiskReversal';
+import TrustSecurity from '../components/sections/TrustSecurity';
 import FAQ from '../components/sections/FAQ';
 import FinalCTA from '../components/sections/FinalCTA';
 import Footer from '../components/Footer';
@@ -19,6 +22,7 @@ const LoginPage: React.FC = () => {
   const { login, logout, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [showLogout, setShowLogout] = React.useState(false);
+  const giftCardRef = React.useRef<HeroGiftCardRef>(null);
 
   // ✅ Redirect if already authenticated
   useEffect(() => {
@@ -28,17 +32,25 @@ const LoginPage: React.FC = () => {
   }, [isAuthenticated, isLoading, navigate]);
 
   const handleLogin = async () => {
-    try {
-      await login();
-    } catch (error) {
-      console.error('Login error:', error);
-      // If user is already logged in, show logout option
-      if (error instanceof Error) {
-        if (error.message && error.message.includes('already logged in')) {
-          setShowLogout(true);
+    // Trigger unwrap animation on gift card
+    if (giftCardRef.current?.triggerUnwrap) {
+      giftCardRef.current.triggerUnwrap();
+    }
+    
+    // Small delay to let animation play, then login
+    setTimeout(async () => {
+      try {
+        await login();
+      } catch (error) {
+        console.error('Login error:', error);
+        // If user is already logged in, show logout option
+        if (error instanceof Error) {
+          if (error.message && error.message.includes('already logged in')) {
+            setShowLogout(true);
+          }
         }
       }
-    }
+    }, 400);
   };
 
   const handleLogout = async () => {
@@ -88,17 +100,22 @@ const LoginPage: React.FC = () => {
       <HolidayBackground />
       
       <nav className="fixed top-0 w-full py-4 sm:py-6 px-4 sm:px-8 flex justify-between items-center z-50 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative">
-        <div className="flex items-center gap-2 text-[#BE123C]">
-          <Gift strokeWidth={2.5} className="drop-shadow-[0_0_8px_rgba(190,18,60,0.5)]" />
-          <div className="flex items-center gap-2">
+        <motion.div
+          className="flex items-center gap-2"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Gift strokeWidth={2.5} className="drop-shadow-[0_0_8px_rgba(190,18,60,0.5)] text-[#BE123C]" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
             <span className="font-bold text-lg sm:text-xl tracking-tight text-white">
               Crypto<span className="text-[#BE123C]">Gifting</span>
             </span>
             <span className="text-xs text-[#94A3B8] font-normal">
-              powered by <span className="text-[#D97706]">sher</span>
+              by <span className="text-[#D97706] font-semibold">Sher</span>
             </span>
           </div>
-        </div>
+        </motion.div>
         
         {/* Middle navigation - centered, hidden on mobile */}
         <div className="hidden lg:flex items-center gap-6 absolute left-1/2 transform -translate-x-1/2">
@@ -143,12 +160,12 @@ const LoginPage: React.FC = () => {
               
               <h1 className="text-h1 font-bold text-white tracking-tight animate-fade-in-up delay-100 drop-shadow-2xl">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BE123C] via-[#FCD34D] to-[#BE123C] bg-size-200 animate-gradient">
-                  Gift crypto like a gift card — festive, instant, effortless.
+                  Send crypto gifts in 60 seconds — wrapped for the holidays.
                 </span>
               </h1>
               
               <p className="text-body-lg text-[#CBD5E1] text-max-width mx-auto lg:mx-0 leading-relaxed animate-fade-in-up delay-200">
-                Your person claims it with email/phone
+                Create a secure gift link. They claim it with email/phone via Privy. No wallet address needed.
               </p>
 
               {/* CTAs */}
@@ -199,12 +216,14 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Right Column - Visual */}
-            <div className="hidden lg:block animate-fade-in-up delay-200 overflow-visible">
-              <CursorGlow>
-                <div className="flex justify-center items-center py-8">
-                  <HeroGiftCard />
-                </div>
-              </CursorGlow>
+            <div className="block animate-fade-in-up delay-200 overflow-visible">
+              <Suspense fallback={<div className="h-64 w-full" />}>
+                <CursorGlow variant="spotlight">
+                  <div className="flex justify-center items-center py-8">
+                    <HeroGiftCard ref={giftCardRef} />
+                  </div>
+                </CursorGlow>
+              </Suspense>
             </div>
           </div>
 
@@ -228,6 +247,9 @@ const LoginPage: React.FC = () => {
 
         {/* Risk Reversal Section */}
         <RiskReversal />
+
+        {/* Trust & Security Section */}
+        <TrustSecurity />
 
         {/* FAQ Section */}
         <FAQ />

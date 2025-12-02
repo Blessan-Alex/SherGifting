@@ -1,8 +1,10 @@
 import React from 'react';
-import { Edit2, Gift, Mail } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Edit2, Gift, Mail, Sparkles, CheckCircle } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GlowButton from './GlowButton';
 import { CARD_TEMPLATES } from '../../lib/cardTemplates';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ReviewStepProps {
   recipientLabel: string;
@@ -49,6 +51,9 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
   isSubmitting = false,
   disabled = false,
 }) => {
+  const { theme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
+
   const formatCurrency = (value: number | null) => {
     if (value === null) return 'N/A';
     return new Intl.NumberFormat('en-US', {
@@ -63,74 +68,138 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
     ? CARD_TEMPLATES.find(card => card.id === selectedCard)
     : null;
 
+  // Get theme-aware colors
+  const getColors = () => {
+    if (theme === 'christmas') {
+      return {
+        primary: '#EB6A46',
+        glow: 'rgba(235, 106, 70, 0.3)',
+      };
+    }
+    if (theme === 'newyear') {
+      return {
+        primary: '#FCD34D',
+        glow: 'rgba(252, 211, 77, 0.3)',
+      };
+    }
+    return {
+      primary: '#06B6D4',
+      glow: 'rgba(6, 182, 212, 0.3)',
+    };
+  };
+
+  const colors = getColors();
+
+  const sections = [
+    {
+      id: 'recipient',
+      icon: Mail,
+      title: 'Recipient',
+      content: (
+        <>
+          <p className="text-white font-medium">{recipientLabel}</p>
+          <p className="text-sm text-[#94A3B8]">{recipientEmail}</p>
+        </>
+      ),
+      editStep: 1,
+    },
+    {
+      id: 'amount',
+      icon: Gift,
+      title: 'Gift Amount',
+      content: (
+        <>
+          <p className="text-white font-bold text-lg">
+            {amount.toFixed(4)} {tokenSymbol}
+          </p>
+          {usdValue && (
+            <p className="text-sm text-[#94A3B8]">{formatCurrency(usdValue)}</p>
+          )}
+          <p className="text-xs text-[#64748B] mt-1">{tokenName}</p>
+        </>
+      ),
+      editStep: 2,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-2">Review Your Gift</h2>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+          <Sparkles size={24} style={{ color: colors.primary }} />
+          Review Your Gift
+        </h2>
         <p className="text-[#94A3B8] text-sm">Double-check everything before sending</p>
-      </div>
+      </motion.div>
 
-      <GlassCard>
+      <GlassCard variant="holiday">
         <div className="space-y-6">
-          {/* Recipient */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Mail size={16} className="text-[#94A3B8]" />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">Recipient</span>
-              </div>
-              <p className="text-white font-medium">{recipientLabel}</p>
-              <p className="text-sm text-[#94A3B8]">{recipientEmail}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onEditStep(1)}
-              className="flex items-center gap-1 text-xs text-[#06B6D4] hover:text-[#0891B2] transition-colors"
-            >
-              <Edit2 size={12} />
-              Edit
-            </button>
-          </div>
-
-          <div className="h-px bg-white/10" />
-
-          {/* Token & Amount */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Gift size={16} className="text-[#94A3B8]" />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">Gift Amount</span>
-              </div>
-              <p className="text-white font-bold text-lg">
-                {amount.toFixed(4)} {tokenSymbol}
-              </p>
-              {usdValue && (
-                <p className="text-sm text-[#94A3B8]">{formatCurrency(usdValue)}</p>
-              )}
-              <p className="text-xs text-[#64748B] mt-1">{tokenName}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onEditStep(2)}
-              className="flex items-center gap-1 text-xs text-[#06B6D4] hover:text-[#0891B2] transition-colors"
-            >
-              <Edit2 size={12} />
-              Edit
-            </button>
-          </div>
+          {/* Animated sections */}
+          {sections.map((section, index) => {
+            const Icon = section.icon;
+            return (
+              <motion.div
+                key={section.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon size={16} className="text-[#94A3B8]" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">
+                        {section.title}
+                      </span>
+                    </div>
+                    {section.content}
+                  </div>
+                  <motion.button
+                    type="button"
+                    onClick={() => onEditStep(section.editStep)}
+                    className="flex items-center gap-1 text-xs transition-colors"
+                    style={{
+                      color: colors.primary,
+                    }}
+                    whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+                    whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
+                  >
+                    <Edit2 size={12} />
+                    Edit
+                  </motion.button>
+                </div>
+                {index < sections.length - 1 && (
+                  <div className="h-px bg-white/10 mt-6" />
+                )}
+              </motion.div>
+            );
+          })}
 
           {/* Greeting Card */}
           {selectedCardTemplate && (
             <>
               <div className="h-px bg-white/10" />
-              <div className="flex items-start justify-between">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="flex items-start justify-between"
+              >
                 <div className="flex-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2 block">Greeting Card</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2 block">
+                    Greeting Card
+                  </span>
                   <div className="flex items-center gap-3">
-                    <img
+                    <motion.img
                       src={selectedCardTemplate.previewUrl}
                       alt={selectedCardTemplate.displayName}
                       className="w-16 h-16 rounded-lg object-cover border border-white/10"
+                      whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+                      transition={{ duration: 0.2 }}
                     />
                     <div>
                       <p className="text-white font-medium text-sm">{selectedCardTemplate.displayName}</p>
@@ -138,15 +207,20 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
                     </div>
                   </div>
                 </div>
-                <button
+                <motion.button
                   type="button"
                   onClick={() => onEditStep(3)}
-                  className="flex items-center gap-1 text-xs text-[#06B6D4] hover:text-[#0891B2] transition-colors"
+                  className="flex items-center gap-1 text-xs transition-colors"
+                  style={{
+                    color: colors.primary,
+                  }}
+                  whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+                  whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
                 >
                   <Edit2 size={12} />
                   Edit
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
             </>
           )}
 
@@ -154,27 +228,46 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
           {message && (
             <>
               <div className="h-px bg-white/10" />
-              <div className="flex items-start justify-between">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="flex items-start justify-between"
+              >
                 <div className="flex-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2 block">Message</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2 block">
+                    Message
+                  </span>
                   <p className="text-sm text-white italic line-clamp-3">"{message}"</p>
                 </div>
-                <button
+                <motion.button
                   type="button"
                   onClick={() => onEditStep(3)}
-                  className="flex items-center gap-1 text-xs text-[#06B6D4] hover:text-[#0891B2] transition-colors"
+                  className="flex items-center gap-1 text-xs transition-colors"
+                  style={{
+                    color: colors.primary,
+                  }}
+                  whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+                  whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
                 >
                   <Edit2 size={12} />
                   Edit
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
             </>
           )}
 
           {/* Cost Breakdown */}
           <div className="h-px bg-white/10" />
-          <div className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] block mb-3">Cost Breakdown</span>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="space-y-2"
+          >
+            <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] block mb-3">
+              Cost Breakdown
+            </span>
             
             <div className="flex justify-between text-sm">
               <span className="text-[#94A3B8]">Gift amount</span>
@@ -202,17 +295,22 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
               </div>
             )}
 
-            <div className="flex justify-between text-base font-bold pt-2 border-t border-white/10">
-              <span className="text-white">Total</span>
-              <span className="text-white">
+            <div className="flex justify-between items-center pt-3 border-t border-white/10">
+              <span className="text-base font-bold text-white">Total</span>
+              <span className="text-lg font-bold" style={{ color: colors.primary }}>
                 {total.toFixed(4)} {tokenSymbol}
-                {usdTotal && <span className="ml-2 text-[#06B6D4]">({formatCurrency(usdTotal)})</span>}
+                {usdTotal && <span className="ml-2 text-white text-base">({formatCurrency(usdTotal)})</span>}
               </span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Remaining Balance */}
-          <div className="bg-[#0F172A]/30 rounded-lg p-3 border border-white/5">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+            className="bg-[#0F172A]/30 rounded-lg p-3 border border-white/5"
+          >
             <div className="flex justify-between text-sm">
               <span className="text-[#94A3B8]">Remaining balance</span>
               <span className="text-white font-medium">
@@ -220,20 +318,39 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
                 {remainingBalanceUsd && <span className="ml-2 text-[#94A3B8]">({formatCurrency(remainingBalanceUsd)})</span>}
               </span>
             </div>
-          </div>
+          </motion.div>
         </div>
       </GlassCard>
 
       {/* Submit Button */}
-      <GlowButton
-        variant="cyan"
-        fullWidth
-        onClick={onSubmit}
-        disabled={disabled || isSubmitting}
-        type="button"
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.6 }}
       >
-        {isSubmitting ? 'Creating Gift Link...' : 'Create Gift Link'}
-      </GlowButton>
+        <GlowButton
+          variant="cyan"
+          fullWidth
+          onClick={onSubmit}
+          disabled={disabled || isSubmitting}
+          type="button"
+          enableRibbonWiggle
+          icon={isSubmitting ? undefined : Gift}
+        >
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <motion.div
+                className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              />
+              Creating Gift Link...
+            </span>
+          ) : (
+            'Create Gift Link'
+          )}
+        </GlowButton>
+      </motion.div>
     </div>
   );
 });
@@ -241,4 +358,3 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
 ReviewStep.displayName = 'ReviewStep';
 
 export default ReviewStep;
-
