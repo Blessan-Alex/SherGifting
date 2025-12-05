@@ -475,3 +475,47 @@ body {
 .text-holiday-primary {
   color: var(--holiday-primary);
 }
+
+/* Christmas Decorations - Responsive adjustments */
+@media (max-width: 768px) {
+  /* Reduce decoration sizes on mobile for better performance */
+  [class*="christmas-decoration"] {
+    transform: scale(0.7);
+  }
+}
+
+/* Optimize image rendering for Christmas decorations */
+.christmas-decoration img,
+[class*="christmas-decoration"] img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Lottie Animation Optimizations */
+.lottie-animation {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.lottie-container {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Reduce Lottie animations on mobile for performance */
+@media (max-width: 768px) {
+  .lottie-container {
+    transform: scale(0.7) translateZ(0);
+  }
+}
+
+/* Pause animations when not in viewport (performance) */
+@media (prefers-reduced-motion: reduce) {
+  .lottie-animation {
+    animation: none !important;
+  }
+}

@@ -17,6 +17,7 @@ import TrustSecurity from '../components/sections/TrustSecurity';
 import FAQ from '../components/sections/FAQ';
 import FinalCTA from '../components/sections/FinalCTA';
 import Footer from '../components/Footer';
+import HeroLottieAnimations from '../components/decorative/HeroLottieAnimations';
 
 const LoginPage: React.FC = () => {
   const { login, logout, isAuthenticated, isLoading } = useAuth();
@@ -148,9 +149,12 @@ const LoginPage: React.FC = () => {
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-8 sm:pb-12 lg:pb-16 relative z-10">
         <div className="w-full max-w-7xl mx-auto">
           {/* Hero Section - 2 Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 lg:mb-24">
+          <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 lg:mb-24 min-h-[600px] lg:min-h-[700px]">
+            {/* Lottie Animations - Scoped to Hero Section */}
+            <HeroLottieAnimations />
+            
             {/* Left Column - Copy + Actions */}
-            <div className="text-center lg:text-left space-y-6 sm:space-y-8">
+            <div className="text-center lg:text-left space-y-6 sm:space-y-8 relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 shadow-lg shadow-black/20 animate-fade-in-up backdrop-blur-md">
                 <Sparkles size={14} className="text-[#FCD34D]" />
                 <span className="text-xs font-bold tracking-widest uppercase text-[#94A3B8]">
@@ -216,7 +220,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Right Column - Visual */}
-            <div className="block animate-fade-in-up delay-200 overflow-visible">
+            <div className="block animate-fade-in-up delay-200 overflow-visible relative z-10">
               <Suspense fallback={<div className="h-64 w-full" />}>
                 <CursorGlow variant="spotlight">
                   <div className="flex justify-center items-center py-8">
