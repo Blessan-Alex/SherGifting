@@ -15,6 +15,7 @@ interface GiftPreviewProps {
   selectedCard: string | null;
   message: string;
   tokenPrice: number | null;
+  currentStep?: number;
 }
 
 const GiftPreview: React.FC<GiftPreviewProps> = React.memo(({
@@ -25,6 +26,7 @@ const GiftPreview: React.FC<GiftPreviewProps> = React.memo(({
   selectedCard,
   message,
   tokenPrice,
+  currentStep = 1,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [hasChanged, setHasChanged] = useState(false);
@@ -54,14 +56,20 @@ const GiftPreview: React.FC<GiftPreviewProps> = React.memo(({
     }).format(value);
   };
 
-  const displayAmount = amount && !isNaN(parseFloat(amount))
+  const hasAmount = amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0;
+  const displayAmount = hasAmount
     ? parseFloat(amount).toFixed(4)
-    : '0.0000';
+    : null;
 
   const displayUsdValue = usdValue !== null && usdValue > 0
     ? formatCurrency(usdValue)
-    : tokenPrice && amount && !isNaN(parseFloat(amount))
+    : tokenPrice && hasAmount
     ? formatCurrency(parseFloat(amount) * tokenPrice)
+    : null;
+
+  // Calculate crypto amount for display
+  const cryptoAmount = hasAmount && tokenPrice && tokenPrice > 0
+    ? (parseFloat(amount) / tokenPrice).toFixed(4)
     : null;
 
   // Get theme-aware colors
@@ -197,18 +205,30 @@ const GiftPreview: React.FC<GiftPreviewProps> = React.memo(({
               transition={{ duration: 0.5 }}
             >
               <p className="text-xs text-[#94A3B8] uppercase tracking-wider mb-2">Gift Amount</p>
-              <p className="text-3xl font-bold text-white mb-1">
-                {displayAmount} <span className="text-xl" style={{ color: colors.primary }}>{tokenSymbol || 'SOL'}</span>
-              </p>
-              {displayUsdValue && (
-                <motion.p
-                  className="text-sm text-[#94A3B8]"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {displayUsdValue}
-                </motion.p>
+              {currentStep === 1 || !hasAmount ? (
+                <p className="text-lg text-[#64748B] italic">
+                  Pick an amount next
+                </p>
+              ) : (
+                <>
+                  {/* USD first (primary) */}
+                  {displayUsdValue && (
+                    <p className="text-3xl font-bold text-white mb-1">
+                      {displayUsdValue}
+                    </p>
+                  )}
+                  {/* Crypto second (secondary, smaller) */}
+                  {cryptoAmount && (
+                    <motion.p
+                      className="text-sm text-[#94A3B8]"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      ≈ {cryptoAmount} {tokenSymbol || 'SOL'}
+                    </motion.p>
+                  )}
+                </>
               )}
             </motion.div>
 

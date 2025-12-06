@@ -14,6 +14,7 @@ import InputField from '../components/UI/InputField';
 import Stepper from '../components/UI/Stepper';
 import GiftPreview from '../components/UI/GiftPreview';
 import TokenPicker from '../components/UI/TokenPicker';
+import AssetSelector from '../components/UI/AssetSelector';
 import QuickAmountChips from '../components/UI/QuickAmountChips';
 import SuggestedAmounts from '../components/UI/SuggestedAmounts';
 import BalanceResolutionPanel from '../components/UI/BalanceResolutionPanel';
@@ -133,6 +134,14 @@ const GiftPage: React.FC = () => {
     const { showToast } = useToast();
     const location = useLocation();
     const stepRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+    
+    // Compute default token from tokens array
+    const defaultToken = useMemo(() => {
+        return tokens.find(t => t.symbol === 'USDC') 
+            || tokens.find(t => t.symbol === 'SOL') 
+            || tokens[0] 
+            || null;
+    }, [tokens]);
 
     // Monitor wallets array for changes
     useEffect(() => {
@@ -183,7 +192,10 @@ const GiftPage: React.FC = () => {
                 setTokens(nonZeroTokens);
                 
                 if (nonZeroTokens.length > 0) {
-                    const defaultToken = nonZeroTokens.find(t => t.symbol === 'SOL') || nonZeroTokens[0];
+                    // Prefer USDC, then SOL, then first available
+                    const defaultToken = nonZeroTokens.find(t => t.symbol === 'USDC') 
+                        || nonZeroTokens.find(t => t.symbol === 'SOL') 
+                        || nonZeroTokens[0];
                     setSelectedToken(defaultToken);
                     
                     const tokenBalance = balances.find(b => b.symbol === defaultToken.symbol);
@@ -1698,9 +1710,31 @@ const GiftPage: React.FC = () => {
         }).format(value);
     };
 
+    // Get theme-aware colors
+    const getColors = () => {
+        if (theme === 'christmas') {
+            return {
+                primary: '#EB6A46',
+                glow: 'rgba(235, 106, 70, 0.3)',
+            };
+        }
+        if (theme === 'newyear') {
+            return {
+                primary: '#FCD34D',
+                glow: 'rgba(252, 211, 77, 0.3)',
+            };
+        }
+        return {
+            primary: '#06B6D4',
+            glow: 'rgba(6, 182, 212, 0.3)',
+        };
+    };
+
+    const colors = getColors();
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-10 animate-fade-in-up pb-24">
-            {/* Confirmation Modal */}
+            {/* Lightweight Confirmation Modal */}
             {showConfirmModal && confirmDetails && (
                 <div className="fixed inset-0 bg-[#0B1120]/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
                     <GlassCard className="max-w-md w-full animate-scale-in relative">
@@ -1713,71 +1747,31 @@ const GiftPage: React.FC = () => {
                             </div>
                         )}
                         
-                        <h2 className="text-2xl font-bold text-white mb-4 text-center">Confirm Gift</h2>
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-bold text-white mb-2">Confirm Gift</h2>
+                            <p className="text-[#94A3B8] text-sm">
+                                Confirm sending {confirmDetails.usdTotal !== null ? formatCurrency(confirmDetails.usdTotal) : `$${confirmDetails.total.toFixed(2)}`} gift?
+                            </p>
+                        </div>
                         
-                        <div className="space-y-4 mb-6">
-                            <div className="bg-[#0F172A]/30 rounded-lg p-4 space-y-3 border border-white/5">
-                                {/* Recipient */}
-                                <div className="pb-3 border-b border-white/5">
-                                    <p className="text-[#94A3B8] text-xs mb-1">Recipient</p>
-                                    <p className="text-white font-mono text-sm break-all">{confirmDetails.recipientLabel}</p>
-                                </div>
-                                
-                                {/* Amount */}
-                                <div className="pb-3 border-b border-white/5">
-                                    <p className="text-[#94A3B8] text-xs mb-1">Amount</p>
-                                    {confirmDetails.usdValue !== null ? (
-                                        <p className="text-white font-bold text-xl">${confirmDetails.usdValue.toFixed(3)} USD</p>
-                                    ) : (
-                                        <p className="text-white font-bold text-xl">{confirmDetails.amount.toFixed(6)} {confirmDetails.token}</p>
-                                    )}
-                                    {confirmDetails.usdValue !== null && (
-                                        <p className="text-[#94A3B8] text-xs mt-1">{confirmDetails.amount.toFixed(6)} {confirmDetails.token}</p>
-                                    )}
-                                </div>
-                                
-                                {/* Service Fee */}
-                                <div className="pb-3 border-b border-white/5">
-                                    <p className="text-[#94A3B8] text-xs mb-1">Service Fee</p>
-                                    <p className="text-[#94A3B8] font-medium">$1.00 USD</p>
-                                </div>
-                                
-                                {/* Greeting Card - $1 if selected */}
-                                {confirmDetails.hasCard && (
-                                    <div className="pb-3 border-b border-white/5">
-                                        <p className="text-[#94A3B8] text-xs mb-1">Greeting Card</p>
-                                        <p className="text-[#94A3B8] font-medium">$1.00 USD</p>
-                                    </div>
-                                )}
-                                
-                                {/* Total */}
-                                <div>
-                                    <p className="text-[#94A3B8] text-xs mb-1">Total</p>
-                                    {confirmDetails.usdTotal !== null ? (
-                                        <p className="text-white font-medium">${confirmDetails.usdTotal.toFixed(3)} USD</p>
-                                    ) : (
-                                        <p className="text-white font-medium">{confirmDetails.total.toFixed(6)} {confirmDetails.token}</p>
-                                    )}
-                                </div>
-                                
-                                {/* Remaining balance */}
-                                <div>
-                                    <p className="text-[#94A3B8] text-xs mb-1">What's left in your wallet</p>
-                                    {confirmDetails.remainingBalanceUsd !== null ? (
-                                        <>
-                                            <p className="text-white font-medium">${confirmDetails.remainingBalanceUsd.toFixed(3)} USD</p>
-                                            <p className="text-[#94A3B8] text-xs mt-1">{confirmDetails.remainingBalance.toFixed(6)} {confirmDetails.token}</p>
-                                        </>
-                                    ) : (
-                                        <p className="text-white font-medium">{confirmDetails.remainingBalance.toFixed(6)} {confirmDetails.token}</p>
-                                    )}
-                                </div>
+                        {/* Simple Summary */}
+                        <div className="bg-[#0F172A]/30 rounded-lg p-4 mb-6 border border-white/5 space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#94A3B8]">To:</span>
+                                <span className="text-white font-medium">{confirmDetails.recipientLabel}</span>
                             </div>
-                            
-                            {confirmDetails.message && (
-                                <div className="bg-[#0F172A]/30 rounded-lg p-4 border border-white/5">
-                                    <p className="text-[#94A3B8] text-sm mb-1">Message:</p>
-                                    <p className="text-white text-sm italic">"{confirmDetails.message}"</p>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-[#94A3B8]">Amount:</span>
+                                <span className="text-white font-medium">
+                                    {confirmDetails.usdValue !== null ? formatCurrency(confirmDetails.usdValue) : `${confirmDetails.amount.toFixed(4)} ${confirmDetails.token}`}
+                                </span>
+                            </div>
+                            {confirmDetails.usdTotal && (
+                                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                    <span className="text-base font-bold text-white">Total:</span>
+                                    <span className="text-lg font-bold" style={{ color: colors.primary }}>
+                                        {formatCurrency(confirmDetails.usdTotal)}
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -1802,7 +1796,7 @@ const GiftPage: React.FC = () => {
                                 onClick={handleConfirmSend}
                                 disabled={isSending}
                             >
-                                {isSending ? 'Creating Gift Link...' : 'Create Gift Link'}
+                                {isSending ? 'Creating...' : 'Confirm & Send'}
                             </GlowButton>
                         </div>
                     </GlassCard>
@@ -1929,9 +1923,9 @@ const GiftPage: React.FC = () => {
             />
             
             {/* Main Content: 2-column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Left Column: Stepper + Form Steps */}
-                <div className="lg:col-span-7 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column: Form Steps */}
+                <div className="lg:col-span-8 space-y-6">
                 {showFormSkeleton ? (
                         <GlassCard>
                     <div className="p-8">
@@ -1973,17 +1967,16 @@ const GiftPage: React.FC = () => {
                                             >
                                                 <div>
                                                     <h2 id="step-1-title" className="text-2xl font-bold text-white mb-2">Who are you gifting?</h2>
-                                                    <p className="text-sm text-[#94A3B8]">We'll send a secure claim link. No wallet address needed.</p>
+                                                    <p className="text-sm text-[#94A3B8]">We'll send a secure claim link. No wallet address needed. They claim using email/phone via Privy.</p>
                                                 </div>
 
                                                 <InputField
-                                                    label="Recipient"
-                                                    placeholder="recipient@example.com or @username"
+                                                    label="Recipient (email or phone)"
+                                                    placeholder="recipient@example.com"
                                                     value={recipientInput}
                                                     onChange={(e) => setRecipientInput(e.target.value)}
                                                     required
                                                     icon={Mail}
-                                                    helperText="Example: recipient@example.com or @username"
                                                     error={recipientError || undefined}
                                                 />
 
@@ -2061,31 +2054,131 @@ const GiftPage: React.FC = () => {
                                             >
                                                 <div>
                                                     <h2 id="step-2-title" className="text-2xl font-bold text-white mb-2">What are you sending?</h2>
-                                                    <p className="text-sm text-[#94A3B8]">Choose a crypto and amount</p>
+                                                    <p className="text-sm text-[#94A3B8]">Enter the gift amount</p>
                         </div>
 
-                                                {/* Token Picker */}
-                                                <div>
-                                                    <label className="text-xs font-bold uppercase tracking-widest text-[#94A3B8] ml-1 mb-3 block">
-                                                        Choose a crypto
-                                                    </label>
-                                                    {tokens.length > 0 ? (
-                                                        <TokenPicker
-                                                            tokens={tokens}
-                                                            selectedToken={selectedToken}
-                                                            onSelect={(token) => {
-                                                                setSelectedToken(token);
-                                                                setAmount('');
-                                                                setTokenAmount('');
-                                                                setUsdAmount('');
-                                                                setQuickAmountSelected(null);
+                                                {/* Asset Selector (collapsed by default) */}
+                                                {tokens.length > 0 && (
+                                                    <AssetSelector
+                                                        tokens={tokens}
+                                                        selectedToken={selectedToken}
+                                                        onSelect={(token) => {
+                                                            setSelectedToken(token);
+                                                            setAmount('');
+                                                            setTokenAmount('');
+                                                            setUsdAmount('');
+                                                            setQuickAmountSelected(null);
+                                                        }}
+                                                        balances={walletBalances}
+                                                        defaultToken={defaultToken}
+                                                    />
+                                                )}
+
+                                                {/* Amount Input - USD First */}
+                                                {selectedToken && (
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <label className="text-xs font-bold uppercase tracking-widest text-[#94A3B8] ml-1">
+                                                                Gift Amount
+                                                            </label>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleMaxAmount}
+                                                                className="text-xs text-[#06B6D4] hover:text-[#0891B2] font-medium"
+                                                            >
+                                                                Max
+                                                            </button>
+                                                        </div>
+
+                                                        {/* USD Input (Primary) */}
+                                                        <InputField
+                                                            type="number"
+                                                            value={usdAmount}
+                                                            onChange={async (e) => {
+                                                                const value = e.target.value;
+                                                                setUsdAmount(value);
+                                                                if (tokenPrice) {
+                                                                    const calculatedTokenAmount = (parseFloat(value) / tokenPrice).toString();
+                                                                    setTokenAmount(calculatedTokenAmount);
+                                                                    setAmount(calculatedTokenAmount);
+                                                                    const numValue = parseFloat(calculatedTokenAmount);
+                                                                    if (!isNaN(numValue) && numValue > 0) {
+                                                                        await validateBalance(numValue);
+                                                                    }
+                                                                }
+                                                                setBalanceError(null);
                                                             }}
-                                                            balances={walletBalances}
+                                                            required
+                                                            min="0"
+                                                            step="0.01"
+                                                            placeholder="0.00"
+                                                            rightElement={<span className="text-[#94A3B8]">$</span>}
+                                                            error={balanceError || undefined}
                                                         />
-                                                    ) : (
-                                                        <p className="text-[#94A3B8] text-sm">No tokens available</p>
-                                                    )}
-                                                </div>
+
+                                                        {/* Crypto Conversion (Secondary, small) */}
+                                                        {tokenPrice && usdAmount && !isNaN(parseFloat(usdAmount)) && parseFloat(usdAmount) > 0 && (
+                                                            <div className="mt-2 text-sm text-[#94A3B8]">
+                                                                <span>≈ {(parseFloat(usdAmount) / tokenPrice).toFixed(4)} {selectedToken?.symbol}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Advanced Toggle (Hidden by default, show as link) */}
+                                                        <div className="mt-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newMode = amountMode === 'usd' ? 'token' : 'usd';
+                                                                    handleModeSwitch(newMode);
+                                                                }}
+                                                                className="text-xs text-[#64748B] hover:text-[#94A3B8] underline"
+                                                            >
+                                                                {amountMode === 'usd' ? 'Enter token amount instead' : 'Enter USD amount instead'}
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Token Amount Input (Only shown when in token mode) */}
+                                                        {amountMode === 'token' && (
+                                                            <div className="mt-4">
+                                                                <InputField
+                                                                    type="number"
+                                                                    value={tokenAmount}
+                                                                    onChange={async (e) => {
+                                                                        const value = e.target.value;
+                                                                        setTokenAmount(value);
+                                                                        setAmount(value);
+                                                                        setBalanceError(null);
+                                                                        const numValue = parseFloat(value);
+                                                                        if (!isNaN(numValue) && numValue > 0) {
+                                                                            await validateBalance(numValue);
+                                                                        }
+                                                                    }}
+                                                                    required
+                                                                    min="0"
+                                                                    step="0.000001"
+                                                                    placeholder="0.00"
+                                                                    rightElement={<span className="text-[#94A3B8]">{selectedToken?.symbol}</span>}
+                                                                    error={balanceError || undefined}
+                                                                />
+                                                                {tokenPrice && tokenAmount && !isNaN(parseFloat(tokenAmount)) && (
+                                                                    <div className="mt-2 text-sm text-[#94A3B8]">
+                                                                        <span>≈ ${(parseFloat(tokenAmount) * tokenPrice).toFixed(2)} USD</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Balance Resolution Panel */}
+                                                        {balanceError && (
+                                                            <div className="mt-4">
+                                                                <BalanceResolutionPanel
+                                                                    balanceError={balanceError}
+                                                                    currentBalance={userBalance}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 {/* Suggested Holiday Amounts */}
                                                 {selectedToken && tokenPrice && tokenPrice > 0 && (
@@ -2093,6 +2186,7 @@ const GiftPage: React.FC = () => {
                                                         onAmountSelect={handleSuggestedAmountSelect}
                                                         selectedAmount={suggestedAmountSelected}
                                                         tokenPrice={tokenPrice}
+                                                        tokenSymbol={selectedToken?.symbol}
                                                     />
                                                 )}
 
@@ -2107,145 +2201,6 @@ const GiftPage: React.FC = () => {
                                                             selectedAmount={quickAmountSelected}
                                                             tokenPrice={tokenPrice}
                                                         />
-                                                    </div>
-                                                )}
-
-                                                {/* Amount Input */}
-                                                {selectedToken && (
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <label className="text-xs font-bold uppercase tracking-widest text-[#94A3B8] ml-1">
-                                                                {amountMode === 'usd' ? 'USD Amount' : 'Token Amount'}
-                                                            </label>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleMaxAmount}
-                                                                className="text-xs text-[#06B6D4] hover:text-[#0891B2] font-medium"
-                                                            >
-                                                                Max
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Mode Toggle */}
-                                                        <motion.div
-                                                            className="grid grid-cols-2 gap-0 bg-[#0F172A] p-1 rounded-xl mb-4 border border-white/10 relative overflow-hidden"
-                                                            layout
-                                                        >
-                                                            <motion.button
-                                                                type="button"
-                                                                onClick={() => handleModeSwitch('token')}
-                                                                className={`py-3 text-sm font-bold rounded-lg transition-all relative z-10 ${
-                                                                    amountMode === 'token'
-                                                                        ? 'text-white shadow-lg'
-                                                                        : 'text-[#64748B] hover:text-[#94A3B8]'
-                                                                }`}
-                                                                whileHover={amountMode !== 'token' ? { scale: 1.05 } : {}}
-                                                                whileTap={{ scale: 0.95 }}
-                                                            >
-                                                                Token Amount
-                                                            </motion.button>
-                                                            <motion.button
-                                                                type="button"
-                                                                onClick={() => handleModeSwitch('usd')}
-                                                                disabled={!tokenPrice || priceLoading}
-                                                                className={`py-3 text-sm font-bold rounded-lg transition-all relative z-10 ${
-                                                                    amountMode === 'usd'
-                                                                        ? 'text-white shadow-lg'
-                                                                        : 'text-[#64748B] hover:text-[#94A3B8]'
-                                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                                                whileHover={amountMode !== 'usd' && !(!tokenPrice || priceLoading) ? { scale: 1.05 } : {}}
-                                                                whileTap={{ scale: 0.95 }}
-                                                            >
-                                                                USD Amount
-                                                            </motion.button>
-                                                            {/* Animated background slider */}
-                                                            <motion.div
-                                                                className="absolute inset-y-1 rounded-lg bg-gradient-to-r from-[#06B6D4] to-[#0891B2]"
-                                                                style={{
-                                                                    background: theme === 'christmas'
-                                                                        ? 'linear-gradient(90deg, #EB6A46 0%, #EF4444 100%)'
-                                                                        : theme === 'newyear'
-                                                                        ? 'linear-gradient(90deg, #FCD34D 0%, #F59E0B 100%)'
-                                                                        : 'linear-gradient(90deg, #06B6D4 0%, #0891B2 100%)',
-                                                                }}
-                                                                layout
-                                                                animate={{
-                                                                    left: amountMode === 'token' ? '0.25rem' : '50%',
-                                                                    right: amountMode === 'token' ? '50%' : '0.25rem',
-                                                                }}
-                                                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                                            />
-                                                        </motion.div>
-
-                                                        {/* Amount Input */}
-                                                        {amountMode === 'token' ? (
-                                                            <InputField
-                                                                type="number"
-                                                                value={tokenAmount}
-                                                                onChange={async (e) => {
-                                                                    const value = e.target.value;
-                                                                    setTokenAmount(value);
-                                                                    setAmount(value);
-                                                                    setBalanceError(null);
-                                                                    const numValue = parseFloat(value);
-                                                                    if (!isNaN(numValue) && numValue > 0) {
-                                                                        await validateBalance(numValue);
-                                                                    }
-                                                                }}
-                                                                required
-                                                                min="0"
-                                                                step="0.000001"
-                                                                placeholder="0.00"
-                                                                rightElement={<span className="text-[#94A3B8]">{selectedToken?.symbol}</span>}
-                                                                error={balanceError || undefined}
-                                                            />
-                                                        ) : (
-                                                            <InputField
-                                                                type="number"
-                                                                value={usdAmount}
-                                                                onChange={async (e) => {
-                                                                    const value = e.target.value;
-                                                                    setUsdAmount(value);
-                                                                    if (tokenPrice) {
-                                                                        const calculatedTokenAmount = (parseFloat(value) / tokenPrice).toString();
-                                                                        setTokenAmount(calculatedTokenAmount);
-                                                                        setAmount(calculatedTokenAmount);
-                                                                        const numValue = parseFloat(calculatedTokenAmount);
-                                                                        if (!isNaN(numValue) && numValue > 0) {
-                                                                            await validateBalance(numValue);
-                                                                        }
-                                                                    }
-                                                                    setBalanceError(null);
-                                                                }}
-                                                                required
-                                                                min="0"
-                                                                step="0.01"
-                                                                placeholder="0.00"
-                                                                rightElement={<span className="text-[#94A3B8]">$</span>}
-                                                                error={balanceError || undefined}
-                                                            />
-                                                        )}
-
-                                                        {/* Conversion Preview */}
-                                                        {tokenPrice && (
-                                                            <div className="mt-2 text-sm text-[#94A3B8]">
-                                                                {amountMode === 'token' && tokenAmount && !isNaN(parseFloat(tokenAmount)) ? (
-                                                                    <span>≈ ${(parseFloat(tokenAmount) * tokenPrice).toFixed(2)} USD</span>
-                                                                ) : amountMode === 'usd' && usdAmount && !isNaN(parseFloat(usdAmount)) ? (
-                                                                    <span>≈ {(parseFloat(usdAmount) / tokenPrice).toFixed(6)} {selectedToken?.symbol}</span>
-                                                                ) : null}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Balance Resolution Panel */}
-                                                        {balanceError && (
-                                                            <div className="mt-4">
-                                                                <BalanceResolutionPanel
-                                                                    balanceError={balanceError}
-                                                                    currentBalance={userBalance}
-                                                                />
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 )}
 
@@ -2434,7 +2389,7 @@ const GiftPage: React.FC = () => {
                 </div>
 
                 {/* Right Column: Gift Preview */}
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-4">
                     {/* Mobile: Collapsible Preview */}
                     <div className="lg:hidden mb-6">
                         <button
@@ -2456,6 +2411,7 @@ const GiftPage: React.FC = () => {
                             selectedCard={selectedCard}
                             message={message}
                             tokenPrice={tokenPrice}
+                            currentStep={currentStep}
                         />
                     </div>
                     {showPreviewMobile && (
@@ -2468,6 +2424,7 @@ const GiftPage: React.FC = () => {
                                 selectedCard={selectedCard}
                                 message={message}
                                 tokenPrice={tokenPrice}
+                                currentStep={currentStep}
                             />
                         </div>
                     )}

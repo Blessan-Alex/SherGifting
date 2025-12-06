@@ -8,6 +8,7 @@ interface SuggestedAmountsProps {
   onAmountSelect: (amount: number) => void;
   selectedAmount: number | null;
   tokenPrice: number | null;
+  tokenSymbol?: string;
 }
 
 const suggestions = [
@@ -38,6 +39,7 @@ const SuggestedAmounts: React.FC<SuggestedAmountsProps> = ({
   onAmountSelect,
   selectedAmount,
   tokenPrice,
+  tokenSymbol = 'SOL',
 }) => {
   const { theme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
@@ -156,17 +158,12 @@ const SuggestedAmounts: React.FC<SuggestedAmountsProps> = ({
                     />
                   </motion.div>
 
-                  {/* Amount */}
+                  {/* Amount - USD primary */}
                   <h3 className="text-lg font-bold text-white mb-1">
                     ${suggestion.amount}
                   </h3>
-                  {tokenAmount && (
-                    <p className="text-xs text-[#94A3B8] mb-2">
-                      ≈ {tokenAmount.toFixed(4)} tokens
-                    </p>
-                  )}
-
-                  {/* Label */}
+                  
+                  {/* Label as subtitle */}
                   <p
                     className="text-xs font-semibold mb-1"
                     style={{
@@ -175,6 +172,15 @@ const SuggestedAmounts: React.FC<SuggestedAmountsProps> = ({
                   >
                     {suggestion.label}
                   </p>
+                  
+                  {/* Crypto conversion - small, muted */}
+                  {tokenAmount && (
+                    <p className="text-[10px] text-[#64748B] mb-1">
+                      ≈ {tokenAmount.toFixed(4)} {tokenSymbol}
+                    </p>
+                  )}
+                  
+                  {/* Description */}
                   <p className="text-[10px] text-[#64748B]">
                     {suggestion.description}
                   </p>
@@ -246,6 +252,9 @@ const SuggestedAmounts: React.FC<SuggestedAmountsProps> = ({
 };
 
 export default SuggestedAmounts;
+
+
+
 
 
 

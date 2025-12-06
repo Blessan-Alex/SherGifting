@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Edit2, Gift, Mail, Sparkles, CheckCircle } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GlowButton from './GlowButton';
+import FeeTooltip from './FeeTooltip';
 import { CARD_TEMPLATES } from '../../lib/cardTemplates';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -90,37 +91,8 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
 
   const colors = getColors();
 
-  const sections = [
-    {
-      id: 'recipient',
-      icon: Mail,
-      title: 'Recipient',
-      content: (
-        <>
-          <p className="text-white font-medium">{recipientLabel}</p>
-          <p className="text-sm text-[#94A3B8]">{recipientEmail}</p>
-        </>
-      ),
-      editStep: 1,
-    },
-    {
-      id: 'amount',
-      icon: Gift,
-      title: 'Gift Amount',
-      content: (
-        <>
-          <p className="text-white font-bold text-lg">
-            {amount.toFixed(4)} {tokenSymbol}
-          </p>
-          {usdValue && (
-            <p className="text-sm text-[#94A3B8]">{formatCurrency(usdValue)}</p>
-          )}
-          <p className="text-xs text-[#64748B] mt-1">{tokenName}</p>
-        </>
-      ),
-      editStep: 2,
-    },
-  ];
+  // Calculate crypto amount for display (already provided as amount)
+  const cryptoAmount = amount.toFixed(4);
 
   return (
     <div className="space-y-6">
@@ -138,91 +110,127 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
 
       <GlassCard variant="holiday">
         <div className="space-y-6">
-          {/* Animated sections */}
-          {sections.map((section, index) => {
-            const Icon = section.icon;
-            return (
-              <motion.div
-                key={section.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon size={16} className="text-[#94A3B8]" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">
-                        {section.title}
-                      </span>
-                    </div>
-                    {section.content}
-                  </div>
-                  <motion.button
-                    type="button"
-                    onClick={() => onEditStep(section.editStep)}
-                    className="flex items-center gap-1 text-xs transition-colors"
-                    style={{
-                      color: colors.primary,
-                    }}
-                    whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
-                    whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
-                  >
-                    <Edit2 size={12} />
-                    Edit
-                  </motion.button>
-                </div>
-                {index < sections.length - 1 && (
-                  <div className="h-px bg-white/10 mt-6" />
-                )}
-              </motion.div>
-            );
-          })}
+          {/* Recipient Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex items-start justify-between"
+          >
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail size={16} className="text-[#94A3B8]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">
+                  To
+                </span>
+              </div>
+              <p className="text-white font-medium">{recipientLabel}</p>
+              <p className="text-sm text-[#94A3B8]">{recipientEmail}</p>
+            </div>
+            <motion.button
+              type="button"
+              onClick={() => onEditStep(1)}
+              className="flex items-center gap-1 text-xs transition-colors"
+              style={{
+                color: colors.primary,
+              }}
+              whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+              whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
+            >
+              <Edit2 size={12} />
+              Edit
+            </motion.button>
+          </motion.div>
 
-          {/* Greeting Card */}
-          {selectedCardTemplate && (
-            <>
-              <div className="h-px bg-white/10" />
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="flex items-start justify-between"
-              >
-                <div className="flex-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2 block">
-                    Greeting Card
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <motion.img
-                      src={selectedCardTemplate.previewUrl}
-                      alt={selectedCardTemplate.displayName}
-                      className="w-16 h-16 rounded-lg object-cover border border-white/10"
-                      whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
-                      transition={{ duration: 0.2 }}
-                    />
-                    <div>
-                      <p className="text-white font-medium text-sm">{selectedCardTemplate.displayName}</p>
-                      <p className="text-xs text-[#94A3B8]">{selectedCardTemplate.occasion}</p>
-                    </div>
+          <div className="h-px bg-white/10" />
+
+          {/* Gift Amount Section - USD First */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="flex items-start justify-between"
+          >
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Gift size={16} className="text-[#94A3B8]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8]">
+                  Gift Amount
+                </span>
+              </div>
+              {/* USD primary, big */}
+              {usdValue && (
+                <p className="text-white font-bold text-2xl mb-1">
+                  {formatCurrency(usdValue)}
+                </p>
+              )}
+              {/* Crypto secondary, small */}
+              <p className="text-sm text-[#94A3B8]">
+                Recipient receives: ≈ {cryptoAmount} {tokenSymbol}
+              </p>
+            </div>
+            <motion.button
+              type="button"
+              onClick={() => onEditStep(2)}
+              className="flex items-center gap-1 text-xs transition-colors"
+              style={{
+                color: colors.primary,
+              }}
+              whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+              whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
+            >
+              <Edit2 size={12} />
+              Edit
+            </motion.button>
+          </motion.div>
+
+          <div className="h-px bg-white/10" />
+
+          {/* Greeting Card Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="flex items-start justify-between"
+          >
+            <div className="flex-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] mb-2 block">
+                Greeting Card
+              </span>
+              {selectedCardTemplate ? (
+                <div className="flex items-center gap-3">
+                  <motion.img
+                    src={selectedCardTemplate.previewUrl}
+                    alt={selectedCardTemplate.displayName}
+                    className="w-16 h-16 rounded-lg object-cover border border-white/10"
+                    whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+                    transition={{ duration: 0.2 }}
+                  />
+                  <div>
+                    <p className="text-white font-medium text-sm">{selectedCardTemplate.displayName}</p>
+                    <p className="text-xs text-[#94A3B8]">{selectedCardTemplate.occasion}</p>
                   </div>
                 </div>
-                <motion.button
-                  type="button"
-                  onClick={() => onEditStep(3)}
-                  className="flex items-center gap-1 text-xs transition-colors"
-                  style={{
-                    color: colors.primary,
-                  }}
-                  whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
-                  whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
-                >
-                  <Edit2 size={12} />
-                  Edit
-                </motion.button>
-              </motion.div>
-            </>
-          )}
+              ) : (
+                <p className="text-sm text-[#94A3B8]">Not included</p>
+              )}
+            </div>
+            <motion.button
+              type="button"
+              onClick={() => onEditStep(3)}
+              className="flex items-center gap-1 text-xs transition-colors"
+              style={{
+                color: colors.primary,
+              }}
+              whileHover={!shouldReduceMotion ? { scale: 1.1 } : {}}
+              whileTap={!shouldReduceMotion ? { scale: 0.9 } : {}}
+            >
+              <Edit2 size={12} />
+              Edit
+            </motion.button>
+          </motion.div>
+
+          <div className="h-px bg-white/10" />
 
           {/* Message */}
           {message && (
@@ -257,68 +265,47 @@ const ReviewStep: React.FC<ReviewStepProps> = React.memo(({
             </>
           )}
 
-          {/* Cost Breakdown */}
-          <div className="h-px bg-white/10" />
+          {/* Fees Section */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.4 }}
-            className="space-y-2"
+            className="space-y-3"
           >
             <span className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] block mb-3">
-              Cost Breakdown
+              Fees
             </span>
             
-            <div className="flex justify-between text-sm">
-              <span className="text-[#94A3B8]">Gift amount</span>
+            {/* Processing Fee */}
+            <div className="flex justify-between items-center text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-[#94A3B8]">Processing (incl. network + operations)</span>
+                <FeeTooltip content="Covers transaction + delivery infrastructure" />
+              </div>
               <span className="text-white font-medium">
-                {amount.toFixed(4)} {tokenSymbol}
-                {usdValue && <span className="ml-2 text-[#94A3B8]">({formatCurrency(usdValue)})</span>}
+                {usdServiceFee ? formatCurrency(usdServiceFee) : `$${serviceFee.toFixed(2)}`}
               </span>
             </div>
 
-            <div className="flex justify-between text-sm">
-              <span className="text-[#94A3B8]">Service fee</span>
-              <span className="text-white font-medium">
-                {serviceFee.toFixed(4)} {tokenSymbol}
-                {usdServiceFee && <span className="ml-2 text-[#94A3B8]">({formatCurrency(usdServiceFee)})</span>}
-              </span>
-            </div>
-
+            {/* Card Fee */}
             {cardFee > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-[#94A3B8]">Card fee</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[#94A3B8]">Greeting card</span>
                 <span className="text-white font-medium">
-                  {cardFee.toFixed(4)} {tokenSymbol}
-                  {usdCardFee && <span className="ml-2 text-[#94A3B8]">({formatCurrency(usdCardFee)})</span>}
+                  {usdCardFee ? formatCurrency(usdCardFee) : `$${cardFee.toFixed(2)}`}
                 </span>
               </div>
             )}
 
-            <div className="flex justify-between items-center pt-3 border-t border-white/10">
-              <span className="text-base font-bold text-white">Total</span>
-              <span className="text-lg font-bold" style={{ color: colors.primary }}>
-                {total.toFixed(4)} {tokenSymbol}
-                {usdTotal && <span className="ml-2 text-white text-base">({formatCurrency(usdTotal)})</span>}
+            {/* Total - Big and Bold */}
+            <div className="flex justify-between items-center pt-4 border-t border-white/10">
+              <span className="text-lg font-bold text-white">Total</span>
+              <span className="text-2xl font-bold" style={{ color: colors.primary }}>
+                {usdTotal ? formatCurrency(usdTotal) : `$${total.toFixed(2)}`}
               </span>
             </div>
           </motion.div>
 
-          {/* Remaining Balance */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
-            className="bg-[#0F172A]/30 rounded-lg p-3 border border-white/5"
-          >
-            <div className="flex justify-between text-sm">
-              <span className="text-[#94A3B8]">Remaining balance</span>
-              <span className="text-white font-medium">
-                {remainingBalance.toFixed(4)} {tokenSymbol}
-                {remainingBalanceUsd && <span className="ml-2 text-[#94A3B8]">({formatCurrency(remainingBalanceUsd)})</span>}
-              </span>
-            </div>
-          </motion.div>
         </div>
       </GlassCard>
 

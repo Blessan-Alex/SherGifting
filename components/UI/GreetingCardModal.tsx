@@ -87,12 +87,12 @@ const GreetingCardModal: React.FC<GreetingCardModalProps> = ({
   // Get theme-aware backdrop color
   const getBackdropColor = () => {
     if (theme === 'christmas') {
-      return 'rgba(235, 106, 70, 0.1)';
+      return 'rgba(235, 106, 70, 0.15)';
     }
     if (theme === 'newyear') {
-      return 'rgba(252, 211, 77, 0.1)';
+      return 'rgba(252, 211, 77, 0.15)';
     }
-    return 'rgba(0, 0, 0, 0.6)';
+    return 'rgba(0, 0, 0, 0.75)'; // Darker backdrop for better contrast
   };
 
   return (
@@ -107,7 +107,7 @@ const GreetingCardModal: React.FC<GreetingCardModalProps> = ({
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-50"
             style={{
-              background: `linear-gradient(135deg, ${getBackdropColor()} 0%, rgba(0, 0, 0, 0.6) 100%)`,
+              background: `linear-gradient(135deg, ${getBackdropColor()} 0%, rgba(0, 0, 0, 0.75) 100%)`,
             }}
             onClick={onClose}
             role="dialog"
@@ -128,21 +128,21 @@ const GreetingCardModal: React.FC<GreetingCardModalProps> = ({
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div 
-              className="w-full max-w-5xl max-h-[90vh] pointer-events-auto"
+              className="w-full max-w-4xl max-h-[85vh] pointer-events-auto"
               role="dialog"
               aria-modal="true"
               aria-labelledby="greeting-card-modal-title"
             >
-            <GlassCard variant="holiday" className="relative flex flex-col max-h-[90vh]">
+            <div className="relative flex flex-col max-h-[85vh] bg-[#0F172A] border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6 flex-shrink-0">
+              <div className="flex items-center justify-between mb-6 flex-shrink-0 p-6 pb-0">
                 <div>
                   <h2 id="greeting-card-modal-title" className="text-2xl font-bold text-white flex items-center gap-2">
                     <Sparkles size={24} className={colors.primary} />
                     Choose a Greeting Card
                   </h2>
                   <p className="text-sm text-[#94A3B8] mt-1">
-                    Make your gift extra special (+$1.00)
+                    Greeting cards are $1 (applied at checkout)
                   </p>
                 </div>
                 <button
@@ -155,7 +155,7 @@ const GreetingCardModal: React.FC<GreetingCardModalProps> = ({
               </div>
 
               {/* Category Filters */}
-              <div className="flex flex-wrap gap-2 mb-6 flex-shrink-0">
+              <div className="flex flex-wrap gap-2 mb-6 flex-shrink-0 px-6">
                 {CATEGORIES.map((category) => {
                   const isActive = selectedCategory === category.id;
                   return (
@@ -188,7 +188,7 @@ const GreetingCardModal: React.FC<GreetingCardModalProps> = ({
               </div>
 
               {/* Card Grid - Scrollable */}
-              <div className="overflow-y-auto flex-1 min-h-0 mb-6">
+              <div className="overflow-y-auto flex-1 min-h-0 mb-6 px-6" style={{ maxHeight: 'calc(85vh - 200px)' }}>
                 <motion.div
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
                   layout
@@ -311,26 +311,36 @@ const GreetingCardModal: React.FC<GreetingCardModalProps> = ({
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-white/10 flex-shrink-0">
-                {selectedCard && (
+              <div className="flex gap-3 pt-4 border-t border-white/10 flex-shrink-0 px-6 pb-6">
+                {selectedCard ? (
+                  <>
+                    <GlowButton
+                      variant="cyan"
+                      onClick={onClose}
+                      className="flex-1"
+                      enableRibbonWiggle
+                    >
+                      Use selected card
+                    </GlowButton>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCard}
+                      className="px-4 py-2 text-sm text-[#94A3B8] hover:text-white transition-colors"
+                    >
+                      Skip Card
+                    </button>
+                  </>
+                ) : (
                   <GlowButton
                     variant="secondary"
-                    onClick={handleRemoveCard}
+                    onClick={onClose}
                     className="flex-1"
                   >
-                    Remove Card
+                    Skip Card
                   </GlowButton>
                 )}
-                <GlowButton
-                  variant="cyan"
-                  onClick={onClose}
-                  className="flex-1"
-                  enableRibbonWiggle
-                >
-                  {selectedCard ? 'Continue' : 'Skip Card'}
-                </GlowButton>
               </div>
-            </GlassCard>
+            </div>
           </div>
           </motion.div>
         </>

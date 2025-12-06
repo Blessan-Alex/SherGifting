@@ -7,12 +7,14 @@ interface BalanceBreakdownProps {
   balances: TokenBalance[];
   lastUpdated: number | null;
   totalBalance: number;
+  collapsed?: boolean;
 }
 
 const BalanceBreakdown: React.FC<BalanceBreakdownProps> = ({
   balances,
   lastUpdated,
   totalBalance,
+  collapsed = false,
 }) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
   const { theme } = useTheme();
@@ -76,6 +78,9 @@ const BalanceBreakdown: React.FC<BalanceBreakdownProps> = ({
 
   const colors = getColors();
 
+  // Calculate summary for collapsed state
+  const otherTokensCount = balances.filter(b => b.symbol !== 'SOL' && b.usdValue && b.usdValue > 0).length;
+
   return (
     <motion.div
       className="space-y-2"
@@ -83,68 +88,88 @@ const BalanceBreakdown: React.FC<BalanceBreakdownProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Token breakdown */}
-      {(solBalance || otherTokens.length > 0) && (
+      {collapsed ? (
+        /* Collapsed: Show summary */
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          {/* Show SOL balance with actual amount */}
           {solBalance && (
-            <motion.div
-              className="flex items-center gap-2"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              <span className="text-white font-medium">{solBalance.symbol}</span>
-              <span className="text-[#94A3B8]">
-                {solBalance.balance.toFixed(4)}
-              </span>
-            </motion.div>
+            <span className="text-white font-medium">{solBalance.symbol}</span>
           )}
-          
-          {/* Show other tokens with USD value */}
-          {otherTokens.map((token, index) => (
-            <motion.div
-              key={token.address}
-              className="flex items-center gap-2"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 + (index + 1) * 0.1 }}
-            >
-              {(solBalance || index > 0) && (
-                <span className="text-[#64748B]">•</span>
-              )}
-              <span className="text-white font-medium">{token.symbol}</span>
-              <span className="text-[#94A3B8]">
-                {formatCurrency(token.usdValue || 0)}
+          {otherTokensCount > 0 && (
+            <>
+              {solBalance && <span className="text-[#64748B]">+</span>}
+              <span className="text-[#64748B] text-sm">
+                {otherTokensCount} other token{otherTokensCount !== 1 ? 's' : ''}
               </span>
-            </motion.div>
-          ))}
-          
-          {balances.length > (solBalance ? 3 : 2) && (
-            <motion.div
-              className="flex items-center gap-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-            >
-              <span className="text-[#64748B]">•</span>
-              <span className="text-[#64748B] text-xs">
-                +{balances.length - (solBalance ? 3 : 2)} more
-              </span>
-            </motion.div>
+            </>
           )}
         </div>
+      ) : (
+        /* Expanded: Show full breakdown */
+        <>
+          {/* Token breakdown */}
+          {(solBalance || otherTokens.length > 0) && (
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              {/* Show SOL balance with actual amount */}
+              {solBalance && (
+                <motion.div
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <span className="text-white font-medium">{solBalance.symbol}</span>
+                  <span className="text-[#94A3B8]">
+                    {solBalance.balance.toFixed(4)}
+                  </span>
+                </motion.div>
+              )}
+              
+              {/* Show other tokens with USD value */}
+              {otherTokens.map((token, index) => (
+                <motion.div
+                  key={token.address}
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 + (index + 1) * 0.1 }}
+                >
+                  {(solBalance || index > 0) && (
+                    <span className="text-[#64748B]">•</span>
+                  )}
+                  <span className="text-white font-medium">{token.symbol}</span>
+                  <span className="text-[#94A3B8]">
+                    {formatCurrency(token.usdValue || 0)}
+                  </span>
+                </motion.div>
+              ))}
+              
+              {balances.length > (solBalance ? 3 : 2) && (
+                <motion.div
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                >
+                  <span className="text-[#64748B]">•</span>
+                  <span className="text-[#64748B] text-xs">
+                    +{balances.length - (solBalance ? 3 : 2)} more
+                  </span>
+                </motion.div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Last updated timestamp */}
-      {lastUpdated && (
+      {/* Last updated timestamp - less prominent */}
+      {lastUpdated && !collapsed && (
         <motion.p
-          className="text-xs text-[#64748B]"
+          className="text-xs text-[#64748B] opacity-60"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 0.6 }}
           transition={{ duration: 0.3, delay: 0.4 }}
         >
-          Last updated: {getRelativeTime(lastUpdated)}
+          Updated {getRelativeTime(lastUpdated)}
         </motion.p>
       )}
     </motion.div>

@@ -7,8 +7,8 @@ import { ArrowUpRight, ArrowDownLeft, Gift, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion, useInView } from 'framer-motion';
 import FrostedCard from '../components/UI/FrostedCard';
 import GlowButton from '../components/UI/GlowButton';
-import BalanceBreakdown from '../components/UI/BalanceBreakdown';
 import QuickSendCard from '../components/UI/QuickSendCard';
+import QuickActionsCard from '../components/UI/QuickActionsCard';
 import RecentGiftsTimeline from '../components/UI/RecentGiftsTimeline';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 import PageHeader from '../components/UI/PageHeader';
@@ -29,9 +29,19 @@ const HomePage: React.FC = () => {
   const [lastBalanceUpdate, setLastBalanceUpdate] = useState<number | null>(null);
   const [previousBalance, setPreviousBalance] = useState<number>(0);
   const [hasBalanceChanged, setHasBalanceChanged] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const showSkeleton = authLoading || isLoading || !user?.wallet_address;
   const balanceRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(balanceRef, { once: true, margin: '-100px' });
+
+  // Timer to update currentTime every second for "Updated X seconds ago" display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!user?.wallet_address) {
@@ -198,27 +208,28 @@ const HomePage: React.FC = () => {
         />
       </motion.div>
 
-      {/* Row 1: Enhanced Balance Card */}
+      {/* Row 1: Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="mb-8"
+      >
+        <QuickActionsCard />
+      </motion.div>
+
+      {/* Row 2: Available to gift (moved here) */}
       <motion.div
         ref={balanceRef}
         initial={{ opacity: 0, y: 20 }}
         animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.5, delay: 0.1 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
         className="mb-8"
       >
         <FrostedCard variant="holiday" className="w-full relative overflow-hidden">
           {/* Ribbon accent */}
           {config.ribbons.enabled && (
             <RibbonBorder position="top" animated={!shouldReduceMotion} />
-          )}
-          
-          {/* Corner decorations */}
-          {config.ornaments.enabled && theme === 'christmas' && (
-            <CornerDecorations 
-              corners={['top-left', 'top-right']} 
-              type="ornament"
-              enabled={config.ornaments.enabled}
-            />
           )}
 
           {/* Sparkle effects on balance change */}
@@ -253,268 +264,84 @@ const HomePage: React.FC = () => {
             )}
           </AnimatePresence>
 
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative z-10">
-            <div className="flex-1">
-              <motion.span
-                className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] flex items-center gap-2"
+          <div className="text-center relative z-10 py-6">
+            <motion.span
+              className="text-xs font-bold uppercase tracking-wider text-[#94A3B8] flex items-center justify-center gap-2 mb-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Sparkles size={14} style={{ color: colors.primary }} />
+              Available to gift
+            </motion.span>
+            {showSkeleton ? (
+              <div className="mt-2 h-12 w-40 mx-auto rounded-lg bg-[#1E293B]/40 animate-pulse" />
+            ) : (
+              <motion.h2
+                key={totalBalanceUSD}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
+                className="text-4xl font-bold text-white mb-1"
+                style={{
+                  textShadow: `0 0 20px ${colors.glow}`,
+                }}
+              >
+                <AnimatedBalance value={totalBalanceUSD} />
+              </motion.h2>
+            )}
+            {!showSkeleton && balances.length > 0 && (
+              <motion.p
+                className="text-sm text-[#94A3B8] mt-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: 0.3 }}
               >
-                <Sparkles size={14} style={{ color: colors.primary }} />
-                Total Balance
-              </motion.span>
-              {showSkeleton ? (
-                <div className="mt-2 h-12 w-40 rounded-lg bg-[#1E293B]/40 animate-pulse" />
-              ) : (
-                <motion.h2
-                  key={totalBalanceUSD}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-                  className="text-5xl font-bold text-white mt-2"
-                  style={{
-                    textShadow: `0 0 20px ${colors.glow}`,
-                  }}
-                >
-                  <AnimatedBalance value={totalBalanceUSD} />
-                </motion.h2>
-              )}
-              {!showSkeleton && balances.length > 0 && (
-                <motion.div
-                  className="mt-3"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <BalanceBreakdown
-                    balances={balances}
-                    lastUpdated={lastBalanceUpdate}
-                    totalBalance={totalBalanceUSD}
-                  />
-                </motion.div>
-              )}
-            </div>
+                {(() => {
+                  const solBalance = balances.find(b => b.symbol === 'SOL');
+                  if (solBalance) {
+                    // Format with 4 decimal places, remove trailing zeros
+                    const formatted = solBalance.balance.toFixed(4).replace(/\.?0+$/, '');
+                    return `≈${formatted} SOL`;
+                  }
+                  return `≈ ${balances.length} token${balances.length !== 1 ? 's' : ''}`;
+                })()}
+              </motion.p>
+            )}
 
-            <motion.div
-              className="flex flex-col sm:flex-row gap-3 md:flex-col md:min-w-[200px]"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <GlowButton 
-                fullWidth 
-                variant="cyan" 
-                icon={Gift} 
-                onClick={() => navigate('/gift')}
-                className="md:order-1"
-                enableRibbonWiggle
+            {/* Last updated timestamp */}
+            {!showSkeleton && lastBalanceUpdate && (
+              <motion.p
+                className="text-xs text-[#64748B] mt-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
               >
-                Send Gift
-              </GlowButton>
-              <GlowButton 
-                fullWidth 
-                variant="secondary" 
-                icon={ArrowUpRight} 
-                onClick={() => navigate('/add-funds')}
-                className="md:order-2"
-              >
-                Add Funds
-              </GlowButton>
-              <GlowButton 
-                fullWidth 
-                variant="secondary" 
-                icon={ArrowDownLeft} 
-                onClick={() => navigate('/withdraw')}
-                className="md:order-3 !py-2 !px-4 !text-sm"
-              >
-                Withdraw
-              </GlowButton>
-            </motion.div>
+                {(() => {
+                  const seconds = Math.floor((currentTime - lastBalanceUpdate) / 1000);
+                  if (seconds < 60) return `Updated ${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+                  const minutes = Math.floor(seconds / 60);
+                  if (minutes < 60) return `Updated ${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+                  const hours = Math.floor(minutes / 60);
+                  if (hours < 24) return `Updated ${hours} hour${hours !== 1 ? 's' : ''} ago`;
+                  const days = Math.floor(hours / 24);
+                  return `Updated ${days} day${days !== 1 ? 's' : ''} ago`;
+                })()}
+              </motion.p>
+            )}
           </div>
         </FrostedCard>
       </motion.div>
 
-      {/* Row 2: Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Quick Send + Recent Gifts */}
-        <motion.div
-          className="lg:col-span-5 space-y-6"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {tokens.length > 0 && (
-            <QuickSendCard
-              tokens={tokens}
-              defaultToken={defaultToken}
-            />
-          )}
-          <RecentGiftsTimeline maxItems={5} />
-        </motion.div>
-
-        {/* Right Column: Assets Table */}
-        <motion.div
-          className="lg:col-span-7"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <FrostedCard variant="holiday" className="h-full relative overflow-hidden">
-            {/* Ribbon accent */}
-            {config.ribbons.enabled && (
-              <RibbonBorder position="top" animated={!shouldReduceMotion} />
-            )}
-
-            <div className="relative z-10">
-              <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <Sparkles size={18} style={{ color: colors.primary }} />
-                Your Assets
-              </h3>
-              {showSkeleton ? (
-                <SkeletonLoader type="list-item" rows={3} />
-              ) : error ? (
-                <div className="flex justify-center items-center h-64">
-                  <p className="text-center text-[#EF4444] px-6">{error}</p>
-                </div>
-              ) : balances.length === 0 ? (
-                <div className="flex flex-col justify-center items-center h-64 space-y-4">
-                  <motion.div
-                    className="w-16 h-16 rounded-full bg-[#1E293B]/40 flex items-center justify-center"
-                    animate={!shouldReduceMotion ? {
-                      scale: [1, 1.1, 1],
-                    } : {}}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <Gift size={24} className="text-[#64748B]" />
-                  </motion.div>
-                  <p className="text-center text-[#94A3B8] px-6">
-                    You don't have any tokens yet. Click "Add Funds" to get started.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex justify-between text-xs font-bold uppercase text-[#64748B] px-5 pb-3 border-b border-white/5">
-                    <span>Asset</span>
-                    <div className="flex gap-12">
-                      <span>Balance</span>
-                      <span>Value</span>
-                    </div>
-                  </div>
-                  
-                  {balances.map((token, index) => (
-                    <motion.div
-                      key={token.address}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      whileHover={!shouldReduceMotion ? {
-                        y: -4,
-                        scale: 1.01,
-                        boxShadow: `0 8px 24px ${colors.glow}40`,
-                      } : {}}
-                      className="flex items-center justify-between p-5 rounded-xl hover:bg-white/10 hover:border-white/20 border border-transparent transition-all group cursor-pointer relative overflow-hidden"
-                      style={{
-                        borderColor: 'transparent',
-                      }}
-                    >
-                      {/* Enhanced shimmer effect on hover */}
-                      {!shouldReduceMotion && (
-                        <>
-                          {/* Primary shimmer sweep */}
-                          <motion.div
-                            className="absolute inset-0 opacity-0 group-hover:opacity-100"
-                            style={{
-                              background: theme === 'christmas'
-                                ? 'linear-gradient(90deg, transparent 0%, rgba(235, 106, 70, 0.15) 50%, transparent 100%)'
-                                : theme === 'newyear'
-                                ? 'linear-gradient(90deg, transparent 0%, rgba(252, 211, 77, 0.15) 50%, transparent 100%)'
-                                : 'linear-gradient(90deg, transparent 0%, rgba(6, 182, 212, 0.15) 50%, transparent 100%)',
-                            }}
-                            initial={{ x: '-100%' }}
-                            whileHover={{ x: '100%' }}
-                            transition={{ duration: 0.8, ease: 'easeInOut' }}
-                          />
-                          {/* Secondary shimmer layer */}
-                          <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100"
-                            initial={{ x: '-100%' }}
-                            whileHover={{ x: '100%' }}
-                            transition={{ duration: 1.2, delay: 0.2, ease: 'easeInOut' }}
-                          />
-                        </>
-                      )}
-
-                      {/* Border brighten on hover */}
-                      {!shouldReduceMotion && (
-                        <motion.div
-                          className="absolute inset-0 rounded-xl pointer-events-none"
-                          style={{
-                            border: `1px solid transparent`,
-                          }}
-                          whileHover={{
-                            borderColor: theme === 'christmas'
-                              ? 'rgba(235, 106, 70, 0.3)'
-                              : theme === 'newyear'
-                              ? 'rgba(252, 211, 77, 0.3)'
-                              : 'rgba(6, 182, 212, 0.3)',
-                          }}
-                          transition={{ duration: 0.3 }}
-                        />
-                      )}
-
-                      <div className="flex items-center gap-4 relative z-10">
-                        <motion.div
-                          className="w-10 h-10 rounded-full bg-[#0F172A] border border-white/10 flex items-center justify-center overflow-hidden"
-                          whileHover={!shouldReduceMotion ? {
-                            scale: 1.1,
-                            boxShadow: `0 0 15px ${colors.glow}`,
-                          } : {}}
-                        >
-                          {token.logoURI ? (
-                            <img src={token.logoURI} alt={token.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-white font-bold text-xs">{token.symbol.charAt(0)}</span>
-                          )}
-                        </motion.div>
-                        <div>
-                          <div className="font-bold text-white text-base">{token.symbol}</div>
-                          <div className="text-xs text-[#94A3B8]">{token.name}</div>
-                        </div>
-                      </div>
-                      <div className="flex gap-8 text-right relative z-10">
-                        <div>
-                          <motion.div
-                            className="font-bold text-white text-base"
-                            key={token.balance}
-                            initial={{ scale: 1 }}
-                            animate={{ scale: [1, 1.05, 1] }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            {token.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                          </motion.div>
-                          <div className="text-xs text-[#94A3B8]">{token.symbol}</div>
-                        </div>
-                        <div className="w-20">
-                          <motion.div
-                            className="font-bold text-white text-base"
-                            key={token.usdValue}
-                            initial={{ scale: 1 }}
-                            animate={{ scale: [1, 1.05, 1] }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            {formatCurrency(token.usdValue || 0)}
-                          </motion.div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </FrostedCard>
-        </motion.div>
-      </div>
+      {/* Row 3: Recent Gifts Timeline */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
+        className="mb-8"
+      >
+        <RecentGiftsTimeline maxItems={5} />
+      </motion.div>
     </div>
   );
 };

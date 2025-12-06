@@ -25,6 +25,7 @@ const RecentGiftsTimeline: React.FC<RecentGiftsTimelineProps> = ({
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'claimed'>('all');
 
   useEffect(() => {
     const fetchGifts = async () => {
@@ -34,8 +35,7 @@ const RecentGiftsTimeline: React.FC<RecentGiftsTimelineProps> = ({
         const allGifts = await giftService.getGiftHistory();
         // Sort by created_at descending and take first maxItems
         const sortedGifts = allGifts
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, maxItems);
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         setGifts(sortedGifts);
       } catch (err) {
         setError('Failed to load recent gifts');
@@ -86,6 +86,12 @@ const RecentGiftsTimeline: React.FC<RecentGiftsTimelineProps> = ({
   const handleGiftClick = (gift: Gift) => {
     navigate('/history');
   };
+
+  // Filter gifts based on status
+  const filteredGifts = gifts.filter(gift => {
+    if (filter === 'all') return true;
+    return gift.status === filter;
+  }).slice(0, maxItems);
 
   // Get theme-aware colors
   const getColors = () => {
@@ -147,21 +153,50 @@ const RecentGiftsTimeline: React.FC<RecentGiftsTimelineProps> = ({
           }}
         />
 
-        <div className="flex items-center justify-between mb-4 pt-2">
-          <div className="flex items-center gap-2">
-            <GiftIcon size={18} style={{ color: colors.primary }} />
-            <h3 className="text-lg font-bold text-white">Recent Gifts</h3>
+        <div className="mb-4 pt-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <GiftIcon size={18} style={{ color: colors.primary }} />
+              <h3 className="text-lg font-bold text-white">Recent Gifts</h3>
+            </div>
+            {gifts.length > 0 && (
+              <motion.button
+                onClick={() => navigate('/history')}
+                className="text-xs text-[#94A3B8] hover:text-white transition-colors flex items-center gap-1"
+                whileHover={!shouldReduceMotion ? { x: 4 } : {}}
+                whileTap={!shouldReduceMotion ? { scale: 0.95 } : {}}
+              >
+                View all
+                <ArrowRight size={12} />
+              </motion.button>
+            )}
           </div>
+
+          {/* Filter chips */}
           {gifts.length > 0 && (
-            <motion.button
-              onClick={() => navigate('/history')}
-              className="text-xs text-[#94A3B8] hover:text-white transition-colors flex items-center gap-1"
-              whileHover={!shouldReduceMotion ? { x: 4 } : {}}
-              whileTap={!shouldReduceMotion ? { scale: 0.95 } : {}}
-            >
-              View all
-              <ArrowRight size={12} />
-            </motion.button>
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'pending', 'claimed'] as const).map((filterOption) => (
+                <motion.button
+                  key={filterOption}
+                  onClick={() => setFilter(filterOption)}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={!shouldReduceMotion ? { scale: 1.05 } : {}}
+                  whileTap={!shouldReduceMotion ? { scale: 0.95 } : {}}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filter === filterOption
+                      ? 'text-white shadow-lg'
+                      : 'text-[#94A3B8] hover:text-white bg-[#0F172A]/50 hover:bg-[#1E293B] border border-white/10'
+                  }`}
+                  style={{
+                    backgroundColor: filter === filterOption ? colors.primary : undefined,
+                    boxShadow: filter === filterOption ? `0 0 20px ${colors.glow}` : undefined,
+                  }}
+                >
+                  {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+                </motion.button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -171,7 +206,7 @@ const RecentGiftsTimeline: React.FC<RecentGiftsTimelineProps> = ({
           <div className="text-center py-4">
             <p className="text-sm text-[#EF4444]">{error}</p>
           </div>
-        ) : gifts.length === 0 ? (
+        ) : filteredGifts.length === 0 ? (
           <div className="text-center py-8 space-y-4">
             <motion.div
               className="w-16 h-16 mx-auto bg-[#1E293B]/40 rounded-full flex items-center justify-center"
@@ -189,7 +224,7 @@ const RecentGiftsTimeline: React.FC<RecentGiftsTimelineProps> = ({
         ) : (
           <div className="space-y-3">
             <AnimatePresence>
-              {gifts.map((gift, index) => (
+              {filteredGifts.map((gift, index) => (
                 <motion.div
                   key={gift.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -266,30 +301,30 @@ const RecentGiftsTimeline: React.FC<RecentGiftsTimelineProps> = ({
                         ease: 'easeInOut',
                       }}
                     />
-                    {index < gifts.length - 1 && (
+                    {index < filteredGifts.length - 1 && (
                       <div className="w-px h-8 bg-white/10 mt-1" />
                     )}
                   </div>
 
                   {/* Gift info */}
                   <div className="flex-1 min-w-0 relative z-10">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <p className="text-sm font-medium text-white truncate">
-                        {truncateEmail(gift.recipient_email)}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="text-lg font-bold text-white">
+                        {formatCurrency(gift.usd_value || 0)}
                       </p>
                       <StatusChip status={gift.status} gift={gift} size="sm" />
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-[#94A3B8]">
-                        {gift.amount.toFixed(4)} {gift.token_symbol}
-                        {gift.usd_value && (
-                          <span className="ml-1">({formatCurrency(gift.usd_value)})</span>
-                        )}
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className="text-sm font-medium text-white truncate">
+                        To: {truncateEmail(gift.recipient_email)}
                       </p>
                       <p className="text-xs text-[#64748B]">
                         {getRelativeTime(gift.created_at)}
                       </p>
                     </div>
+                    <p className="text-xs text-[#94A3B8]">
+                      {gift.amount.toFixed(4)} {gift.token_symbol}
+                    </p>
                   </div>
                 </motion.div>
               ))}

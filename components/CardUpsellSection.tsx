@@ -49,14 +49,14 @@ export const CardUpsellSection: React.FC<CardUpsellSectionProps> = ({
           className="cursor-pointer font-bold text-white text-sm flex items-center gap-2"
         >
           Add a Greeting Card
-          <span className="bg-[#06B6D4]/20 text-[#06B6D4] text-xs px-2 py-0.5 rounded font-bold">
-            +$1.00
+          <span className="text-xs text-[#64748B] px-2 py-0.5 rounded font-medium">
+            Optional
           </span>
         </label>
       </div>
       
       <p className="text-xs text-[#94A3B8] mb-6 pl-8">
-        Make your gift extra special with a personalized greeting card
+        Includes festive design + delivered with gift link
       </p>
 
       {/* Selected Card Preview */}

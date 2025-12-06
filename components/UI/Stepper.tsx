@@ -155,18 +155,13 @@ const Stepper: React.FC<StepperProps> = ({
                 whileTap={!shouldReduceMotion && isClickable ? {
                   scale: 0.95,
                 } : {}}
-                animate={!shouldReduceMotion && state === 'active' ? {
-                  scale: [1, 1.1, 1],
-                } : {}}
                 transition={{
-                  duration: state === 'active' ? 2 : 0.2,
-                  repeat: state === 'active' ? Infinity : 0,
-                  ease: 'easeInOut',
+                  duration: 0.2,
                 }}
               >
                 {/* Ribbon accent for active step */}
                 {state === 'active' && !shouldReduceMotion && (
-                  <motion.div
+                  <div
                     className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-3 rounded-t-full"
                     style={{
                       background: theme === 'christmas'
@@ -174,15 +169,6 @@ const Stepper: React.FC<StepperProps> = ({
                         : theme === 'newyear'
                         ? 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)'
                         : 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)',
-                    }}
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      y: [0, -2, 0],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
                     }}
                   />
                 )}
@@ -257,9 +243,18 @@ const Stepper: React.FC<StepperProps> = ({
                   ease: 'easeInOut',
                 }}
               >
+                {/* Step X of 4 text */}
                 <div
                   className={`
-                    text-xs font-bold uppercase tracking-wider
+                    text-[10px] mb-1 font-medium
+                    ${state === 'active' ? 'text-white' : 'text-[#64748B]'}
+                  `}
+                >
+                  Step {step.number} of {steps.length}
+                </div>
+                <div
+                  className={`
+                    text-sm font-bold uppercase tracking-wider
                     ${state === 'active'
                       ? ''
                       : state === 'completed'
@@ -275,7 +270,7 @@ const Stepper: React.FC<StepperProps> = ({
                 </div>
                 <div
                   className={`
-                    text-[10px] mt-0.5
+                    text-xs mt-0.5
                     ${state === 'active' ? 'text-white' : 'text-[#94A3B8]'}
                   `}
                 >

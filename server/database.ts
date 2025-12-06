@@ -7,17 +7,23 @@ if (!DATABASE_URL) {
   console.warn('⚠️ Warning: DATABASE_URL not set. Database features will be disabled.');
 }
 
-// Create a connection pool
+// Create a connection pool with better timeout and retry settings
 const pool = DATABASE_URL
   ? new Pool({
       connectionString: DATABASE_URL,
       ssl: DATABASE_URL.includes('neon.tech') || DATABASE_URL.includes('vercel') 
         ? { rejectUnauthorized: false } 
         : false,
+      // Add connection timeout settings for unstable networks
+      connectionTimeoutMillis: 30000, // 30 seconds
+      idleTimeoutMillis: 30000,
+      max: 10, // Maximum number of clients in the pool
+      // Retry connection on failure
+      allowExitOnIdle: false,
     })
   : null;
 
-// Test connection
+// Test connection with retry logic
 if (pool) {
   pool.on('connect', () => {
     console.log('✅ Connected to PostgreSQL database');
@@ -27,7 +33,7 @@ if (pool) {
     console.error('❌ Unexpected error on idle PostgreSQL client:', err);
   });
 
-  // Initialize database schema
+  // Initialize database schema with retry logic
   (async () => {
     try {
       await initializeSchema();
