@@ -13,6 +13,9 @@ const RecipientExperience: React.FC = () => {
   const { theme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
   
+  // Note: Using local useScroll with target for element-specific scroll tracking.
+  // This component tracks scroll relative to its own section, not the page.
+  // For page-level scroll, components should use useScrollMotion() from context.
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start end', 'end start'],

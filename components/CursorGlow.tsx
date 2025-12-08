@@ -1,59 +1,69 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
-import { lerp } from "../lib/animations";
+import { useEffectsPolicy } from "../hooks/useEffectsPolicy";
 
 interface CursorGlowProps {
   children: React.ReactNode;
   variant?: 'default' | 'spotlight';
 }
 
+/**
+ * CursorGlow component that follows the cursor with a radial gradient glow.
+ * 
+ * Performance optimizations:
+ * - No continuous RAF loop: updates only on pointer move, max once per frame
+ * - Uses CSS variables for positioning (no state-driven re-renders)
+ * - Disabled entirely on mobile and reduced motion (mount policy)
+ */
 export function CursorGlow({ children, variant = 'default' }: CursorGlowProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const posRef = useRef({ x: 0, y: 0 });
+  const rafIdRef = useRef<number | null>(null);
   const { theme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
+  const { allowHeavyEffects } = useEffectsPolicy();
+
+  // Don't mount if heavy effects are not allowed (mount policy over pause logic)
+  if (!allowHeavyEffects) {
+    return <>{children}</>;
+  }
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const container = containerRef.current;
+    const glow = glowRef.current;
+    if (!container || !glow) return;
 
-    let raf = 0;
-    const onMove = (e: MouseEvent) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const r = el.getBoundingClientRect();
-        setPos({ x: e.clientX - r.left, y: e.clientY - r.top });
-      });
+    const onPointerMove = (e: PointerEvent) => {
+      const rect = container.getBoundingClientRect();
+      // Store position in ref (no state update = no re-render)
+      posRef.current = { 
+        x: e.clientX - rect.left, 
+        y: e.clientY - rect.top 
+      };
+      
+      // Schedule single rAF update (batches multiple moves into one frame)
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          // Write CSS variables directly (no React re-render)
+          glow.style.setProperty('--cursor-x', `${posRef.current.x}px`);
+          glow.style.setProperty('--cursor-y', `${posRef.current.y}px`);
+          rafIdRef.current = null;
+        });
+      }
     };
 
-    el.addEventListener("mousemove", onMove);
+    container.addEventListener("pointermove", onPointerMove, { passive: true });
+    
     return () => {
-      cancelAnimationFrame(raf);
-      el.removeEventListener("mousemove", onMove);
+      container.removeEventListener("pointermove", onPointerMove);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
     };
   }, []);
-
-  // Smooth interpolation for cursor position
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      setCurrentPos(pos);
-      return;
-    }
-
-    let raf = 0;
-    const updatePosition = () => {
-      setCurrentPos((prev) => ({
-        x: lerp(prev.x, pos.x, 0.15),
-        y: lerp(prev.y, pos.y, 0.15),
-      }));
-      raf = requestAnimationFrame(updatePosition);
-    };
-
-    raf = requestAnimationFrame(updatePosition);
-    return () => cancelAnimationFrame(raf);
-  }, [pos.x, pos.y, shouldReduceMotion]);
 
   // Get gradient colors based on theme and variant
   const getGradientColors = () => {
@@ -92,11 +102,15 @@ export function CursorGlow({ children, variant = 'default' }: CursorGlowProps) {
   const opacityClass = variant === 'spotlight' ? 'opacity-70' : 'opacity-60';
 
   return (
-    <div ref={ref} className="relative overflow-visible">
+    <div ref={containerRef} className="relative overflow-visible">
       <motion.div
+        ref={glowRef}
         className={`pointer-events-none absolute -inset-24 ${blurClass} ${opacityClass}`}
         style={{
-          background: `radial-gradient(${gradient.size}px circle at ${currentPos.x}px ${currentPos.y}px, ${gradient.colors})`,
+          // Use CSS variables for positioning (updated via rAF, no React re-renders)
+          background: `radial-gradient(${gradient.size}px circle at var(--cursor-x, 50%) var(--cursor-y, 50%), ${gradient.colors})`,
+          // Smooth transition for CSS variable changes
+          transition: shouldReduceMotion ? 'none' : 'background 0.1s ease-out',
         }}
         animate={
           !shouldReduceMotion && variant === 'spotlight'
@@ -116,4 +130,8 @@ export function CursorGlow({ children, variant = 'default' }: CursorGlowProps) {
   );
 }
 
-export default CursorGlow;
+// Memoize to prevent unnecessary re-renders when parent re-renders
+// Props are stable (variant doesn't change frequently, children handled separately)
+export default React.memo(CursorGlow, (prevProps, nextProps) => {
+  return prevProps.variant === nextProps.variant;
+});

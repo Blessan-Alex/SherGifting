@@ -1,244 +1,365 @@
-Got it. Looking at the full “Send Gift” flow (WHO → WHAT → PERSONALIZE → REVIEW + confirm modal) **as a senior frontend + UX and from a Web2 user POV**, you’re *very close* to a strong product. The structure is right (stepper + sticky preview), but the **information hierarchy is still Web3-first** (token amount, fees, selections) and the flow has a couple “friction spikes” that will cause drop-off.
+Reviewing the current hero implementation to plan the UI/UX changes.
 
-I’ll rate each step, then tell you exactly what to change (copy + placement + psychology).
 
----
+[4 tools called]
 
-## Overall flow rating
 
-* **As a Web3 user:** **7.5/10** (clear, guided, consistent, looks premium)
-* **As a Web2 user:** **6/10** (still feels like “crypto form”, not “send a gift”)
+Reviewing the full landing page and related components:
 
-Main reasons Web2 users hesitate:
 
-1. **Crypto is primary everywhere** (SOL amount big; USD feels secondary)
-2. **Too many decision points** (token choice, USD/token toggle, card fee)
-3. **Fees feel “surprising”** even if disclosed (card + service fee + onramp)
+[5 tools called]
 
----
 
-## Step-by-step ratings + what to improve
+Checking font loading, contrast, and card payment mentions:
 
-### 1) WHO (Recipient)
 
-**Rating:** 7/10
-**What works**
+[5 tools called]
 
-* Clear title: “Who are you gifting?”
-* Single input. Great.
 
-**What hurts Web2**
+## Implementation plan: Hero section UI/UX improvements
 
-* Placeholder “[recipient@example.com](mailto:recipient@example.com) or @username” is fine, but Web2 expects “email/phone/contact”, not username handle.
-* Sticky preview shows “Gift amount 0.0000 SOL / $0.00” which looks broken at step 1.
+### Current state analysis
 
-**Fixes**
+**Hero section location:** `pages/LoginPage.tsx` (lines 152-232)
 
-* Change helper copy to reduce crypto anxiety:
-
-  * ✅ “We’ll send a secure claim link. **No wallet address needed.**”
-  * Add: “They claim using email/phone via Privy.”
-* Update preview for step 1:
-
-  * Instead of showing **0.0000 SOL**, show a friendly placeholder:
-
-    * “Gift amount: —”
-    * “Pick an amount next”
-* Input label tweak:
-
-  * **Recipient (email or phone)**
-  * Keep @username as a secondary hint: “or @username (optional)”
+**Current implementation:**
+1. Subcopy (line 172): "Create a secure gift link. They claim it with email/phone via Privy. No wallet address needed."
+2. Secondary CTA (line 198): "See recipient experience"
+3. Trust cues (lines 204-219): Below CTAs but visually separated
+4. Snow animation: Already respects `prefers-reduced-motion` via `useReducedMotion()` hook
+5. Fonts: Montserrat loaded via Google Fonts (not preloaded)
+6. Contrast: Uses `text-[#CBD5E1]` - needs verification
+7. Card payment: Onramp system exists but not mentioned in hero
 
 ---
 
-### 2) WHAT (Token + Amount)
+## Implementation plan
 
-**Rating:** Web3: 7/10 | Web2: 5/10
-**What works**
+### 1) Hero subcopy → 1-line ladder
 
-* Suggested holiday amounts is a great pattern.
-* Clear Continue CTA.
-* Sticky preview reinforces choices.
+**File:** `pages/LoginPage.tsx`  
+**Line:** 172
 
-**What hurts Web2**
+**Current:**
+```tsx
+<p className="text-body-lg text-[#CBD5E1] text-max-width mx-auto lg:mx-0 leading-relaxed animate-fade-in-up delay-200">
+  Create a secure gift link. They claim it with email/phone via Privy. No wallet address needed.
+</p>
+```
 
-* You still lead with **Choose a crypto**. Web2 wants **USD gift** first.
-* The UI toggles between Token Amount / USD Amount — cognitive load.
-* Token decimals are too prominent (0.1882 SOL reads like “finance math”).
+**Change to:**
+```tsx
+<p className="text-body-lg text-[#CBD5E1] text-max-width mx-auto lg:mx-0 leading-relaxed animate-fade-in-up delay-200">
+  Pick an amount → choose a card → send a link. They claim by email/phone. No wallet needed.
+</p>
+```
 
-**Fixes (high impact)**
-
-1. **Make USD the primary input and the hero number everywhere**
-
-   * Big input: **$25.00**
-   * Under it: “≈ 0.1882 SOL” (small, muted, with ≈)
-2. **Make crypto choice optional**
-
-   * Default delivery asset: **USDC (Recommended)** or “Best option”
-   * Hide token dropdown behind “Change” / “Advanced”
-3. Keep “Suggested holiday amounts” but make them USD-first
-
-   * Card title: **$10**
-   * Subtitle: “Stocking stuffer”
-   * Tiny line below: “≈ 0.0757 SOL”
-
-**UI hierarchy rule for Web2:**
-
-> USD big, crypto small, fees visible but not alarming.
+**Rationale:** Clear 3-step ladder, removes "Privy" jargon, keeps "No wallet needed" as reassurance.
 
 ---
 
-### 3) PERSONALIZE (Card + message)
+### 2) Add "Pay by card" microcopy
 
-**Rating:** 7/10 (good layout, nice preview integration)
+**File:** `pages/LoginPage.tsx`  
+**Location:** After subcopy, before CTAs (around line 174)
 
-**What hurts conversion**
+**Add:**
+```tsx
+{/* Payment clarity */}
+<p className="text-sm text-[#94A3B8] text-center lg:text-left animate-fade-in-up delay-250">
+  Pay by card (no crypto needed)
+</p>
+```
 
-* The “Add a greeting card +$1.00” tag **feels like an upsell tax** at the moment of choice.
-* Your modal is visually heavy and wide; it steals attention and feels like “more work”.
+**Alternative (if Apple Pay/Google Pay supported):**
+```tsx
+<p className="text-sm text-[#94A3B8] text-center lg:text-left animate-fade-in-up delay-250">
+  Pay by card • Apple Pay/Google Pay
+</p>
+```
 
-#### Your team’s point is valid:
-
-> Showing “+$1.00” directly on the toggle discourages selection.
-
-But you’re also right:
-
-> You can’t hide the charge—users must learn it *before purchase*.
-
-✅ Best compromise (psychologically + ethically):
-
-### “Reveal cost when intent is shown”
-
-Instead of showing **+$1.00** next to the checkbox, do:
-
-**Collapsed state**
-
-* Button-like row: **Add a greeting card**
-* Microcopy underneath: “Includes festive design + delivered with gift link”
-* A subtle tag: **Optional** (no price shown here)
-
-**When user clicks “Add a greeting card”**
-
-* Open the card picker modal
-* In the modal header or footer show:
-
-  * “Greeting cards are **$1** (applied at checkout)”
-  * Or “Greeting cards **start at $1**”
-* Show it as a calm line, not as a warning.
-
-**Why this works**
-
-* You’re not tricking anyone.
-* You avoid front-loading the pain.
-* The price appears at the moment the user is *already motivated* (they clicked to add a card).
-
-Also: move “Skip Card” to a secondary text button; keep primary as “Use selected card”.
+**Note:** Check if onramp supports Apple Pay/Google Pay. If not, use the simpler version.
 
 ---
 
-### 4) REVIEW step (the screen)
+### 3) Move trust cues directly under primary CTA
 
-**Rating:** 5.5/10
-This step currently feels **underbuilt**: it’s mostly a “Review Gift” button, then you push users into a modal.
+**File:** `pages/LoginPage.tsx`  
+**Current location:** Lines 204-219 (separate section)  
+**New location:** Immediately after CTA buttons (around line 201)
 
-For Web2 users, “Review” should be where they gain confidence:
+**Current structure:**
+```tsx
+{/* CTAs */}
+<div className="flex flex-col sm:flex-row gap-4 ...">
+  <GlowButton>Send a Gift</GlowButton>
+  <GlowButton>See recipient experience</GlowButton>
+</div>
 
-* To: email
-* Amount: **$25.00**
-* “Recipient receives ≈ 0.1882 SOL”
-* Greeting card included?
-* Fees summarized clearly
-* Final action: “Create Gift Link”
+{/* Micro trust row - currently here but separated */}
+<div className="flex flex-wrap items-center ...">
+  ...
+</div>
+```
 
-**Fix**
+**New structure:**
+```tsx
+{/* CTAs */}
+<div className="space-y-4 animate-fade-in-up delay-300">
+  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+    <GlowButton onClick={handleLogin} variant="primary" icon={ArrowRight} fullWidth className="sm:w-auto">
+      Send a Gift
+    </GlowButton>
+    <GlowButton 
+      onClick={() => scrollToSection('preview')} 
+      variant="secondary" 
+      fullWidth 
+      className="sm:w-auto"
+    >
+      Preview how they claim
+    </GlowButton>
+  </div>
+  
+  {/* Trust cues - moved directly under CTA */}
+  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-[#94A3B8]">
+    <div className="flex items-center gap-1.5">
+      <Shield size={12} />
+      <span>No wallet needed</span>
+    </div>
+    <span className="hidden sm:inline">•</span>
+    <div className="flex items-center gap-1.5">
+      <Link2 size={12} />
+      <span>Link-based claiming</span>
+    </div>
+    <span className="hidden sm:inline">•</span>
+    <div className="flex items-center gap-1.5">
+      <Shield size={12} />
+      <span>Powered by Privy</span>
+    </div>
+  </div>
+</div>
+```
 
-* Make the Review page itself a full summary (no “empty” state)
-* Either:
-
-  * remove the modal entirely, OR
-  * keep modal only if you need a final confirmation, but make it very lightweight.
-
----
-
-### 5) Confirm modal (Confirm Gift)
-
-**Rating:** 6.5/10
-**What works**
-
-* Fee breakdown is explicit (good trust)
-* Clear primary: “Create Gift Link”
-
-**What hurts Web2**
-
-* Too many numbers and crypto units. Use a Web2 “receipt” layout:
-
-  * Big: **Total: $27.00**
-  * Smaller: includes fees and what the recipient gets
-* Service/greeting fees should not feel “gotcha”.
-
-**Copy + layout improvements**
-
-* Replace “Service fee $1.00 USD” with:
-
-  * “Processing (incl. network + operations) $1”
-* Add an info tooltip “What’s this?” with simple explanation.
-* Show USD first everywhere. Crypto is secondary.
-
----
-
-## Spacing / composition issues I see across screens
-
-* The flow is centered in a **small column** with lots of dead space. It looks premium, but it can feel “empty / slow”.
-
-  * Consider slightly increasing the form card width on desktop (or bring preview closer).
-* Stepper labels are small; progress is hard to parse fast.
-
-  * Add “Step 2 of 4” text.
-* Continue button sometimes looks disabled even when it’s primary (color contrast).
-
-  * Make primary CTA color *consistent* across all steps.
-
----
-
-## Web2-first redesign rules (apply globally)
-
-1. **USD is the primary currency** everywhere
-2. **Crypto choice is optional** (Advanced)
-3. **User sees what happens next** (“secure claim link”, “no wallet needed”)
-4. **Fees are disclosed at the right moment** (not too early, not too late)
-5. **Reduce decimals + jargon**
-
-   * show “≈”, show 2 decimals USD, show fewer token decimals unless needed
-6. **Preview should feel like a gift card receipt**, not a blockchain transaction
+**Changes:**
+- Wrap CTAs and trust cues in same container
+- Reorder trust cues: "No wallet needed" first, "Powered by Privy" last
+- Remove "Built by Sher" (keep in footer)
+- Adjust spacing to group visually
 
 ---
 
-## Fee disclosure: “psychological but honest” phrasing options
+### 4) Rename secondary CTA
 
-For greeting card:
+**File:** `pages/LoginPage.tsx`  
+**Line:** 198
 
-* “Greeting card: **$1** (applied at checkout)”
-* “Premium greeting card: **$1**”
-* “Festive card design: **$1**”
-* “Includes card delivery: **$1**”
+**Current:**
+```tsx
+See recipient experience
+```
 
-For service fee:
+**Change to:**
+```tsx
+Preview how they claim
+```
 
-* “Processing fee (incl. network): $1”
-* “Service + network: $1”
-* Tooltip: “Covers transaction + delivery infrastructure”
-
-Avoid:
-
-* “+$1 upfront” beside the checkbox (creates loss aversion immediately)
-* Hiding it until after “Create Gift Link” (feels deceptive)
+**Verification:** Ensure `scrollToSection('preview')` routes to the RecipientExperience section (it does, line 247).
 
 ---
 
-## Biggest 3 wins (do these first)
+### 5) Snow animation respects `prefers-reduced-motion`
 
-1. **Make amount USD-first and default** (everywhere, including the sticky preview)
-2. **Move crypto selection behind “Change asset”** (default to USDC recommended)
-3. **Rebuild Review step into a real summary** (reduce modal dependency)
+**Status:** Already implemented
 
-If you paste the TSX for your Step 2 (“What are you sending?”) component, I can rewrite it to a USD-first design while keeping your current state/handlers intact.
+**Files:**
+- `components/decorative/SnowParticles.tsx` (line 70): Uses `useReducedMotion()`
+- `components/HolidayBackground.tsx` (line 67): Uses `useReducedMotion()`
+- `lib/animations.ts`: Has `useReducedMotion()` wrapper
+
+**Verification needed:**
+- Ensure CSS `@media (prefers-reduced-motion: reduce)` in `index.css` (lines 89-98) is working
+- Test that snow particles reduce to 5 when motion is reduced (line 74 in SnowParticles.tsx)
+
+**Enhancement (optional):**
+If snow still renders with reduced motion, add early return:
+```tsx
+if (shouldReduceMotion) {
+  return null; // Don't render canvas at all
+}
+```
+
+---
+
+### 6) Optimize LCP (fonts, defer animations)
+
+**A. Font preloading**
+
+**File:** `index.html`  
+**Current (line 7):**
+```html
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+```
+
+**Change to:**
+```html
+<!-- Preload critical font weights -->
+<link rel="preload" href="https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aXpsog.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCvr6Hw5aXpsog.woff2" as="font" type="font/woff2" crossorigin />
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+```
+
+**Better approach (if using Vite):**
+Add to `vite.config.ts`:
+```ts
+export default defineConfig({
+  // ... existing config
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-fonts': []
+        }
+      }
+    }
+  }
+})
+```
+
+**B. Defer non-critical animations**
+
+**File:** `pages/LoginPage.tsx`  
+**Current:** `HolidayBackground` loads immediately (line 101)
+
+**Change to lazy load with delay:**
+```tsx
+// At top of component
+const [showBackground, setShowBackground] = useState(false);
+
+useEffect(() => {
+  // Defer background until after first paint
+  const timer = setTimeout(() => {
+    setShowBackground(true);
+  }, 100);
+  return () => clearTimeout(timer);
+}, []);
+
+// In JSX
+{showBackground && <HolidayBackground />}
+```
+
+**C. Hero background optimization**
+
+**File:** `components/HolidayBackground.tsx`  
+**Current:** Snow particles render immediately
+
+**Enhancement:** Add `requestIdleCallback` wrapper:
+```tsx
+useEffect(() => {
+  if (shouldShowSnow) {
+    const loadSnow = () => {
+      // Mount snow component
+    };
+    
+    if (typeof window !== 'undefined' && (window as any).requestIdleCallback) {
+      (window as any).requestIdleCallback(loadSnow, { timeout: 2000 });
+    } else {
+      setTimeout(loadSnow, 100);
+    }
+  }
+}, [shouldShowSnow]);
+```
+
+---
+
+### 7) Contrast check for body text (WCAG)
+
+**File:** `pages/LoginPage.tsx`  
+**Current:** `text-[#CBD5E1]` on `bg-[#0B1120]`
+
+**Contrast calculation:**
+- `#CBD5E1` (text) vs `#0B1120` (background)
+- Need to verify: WCAG AA requires 4.5:1 for normal text
+
+**Fix if needed:**
+```tsx
+// Change from:
+className="text-body-lg text-[#CBD5E1] ..."
+
+// To (brighter):
+className="text-body-lg text-[#E2E8F0] ..." // or text-white/90
+```
+
+**Also check:**
+- Trust cues: `text-[#94A3B8]` - may need `text-[#CBD5E1]`
+- Payment microcopy: `text-[#94A3B8]` - may need `text-[#CBD5E1]`
+
+**Tool to verify:** Use browser DevTools or online contrast checker.
+
+---
+
+## Complete code changes summary
+
+### File 1: `pages/LoginPage.tsx`
+
+**Changes:**
+1. Line 172: Update subcopy
+2. Line 174: Add payment microcopy
+3. Lines 188-219: Restructure CTAs + trust cues
+4. Line 198: Rename secondary CTA
+
+### File 2: `index.html`
+
+**Changes:**
+1. Line 7: Add font preloading
+
+### File 3: `index.css` (optional)
+
+**Changes:**
+1. Verify contrast ratios
+2. Ensure reduced motion CSS is comprehensive
+
+### File 4: `components/decorative/SnowParticles.tsx` (optional enhancement)
+
+**Changes:**
+1. Add early return if `shouldReduceMotion` is true
+
+---
+
+## Acceptance criteria checklist
+
+- [ ] Subcopy reads as 3-step ladder (pick → choose → send)
+- [ ] Subcopy contains "No wallet needed"
+- [ ] "Pay by card" microcopy visible above fold
+- [ ] Trust cues directly under primary CTA (same visual group)
+- [ ] Secondary CTA says "Preview how they claim"
+- [ ] Snow animation disabled/static with reduced motion ON
+- [ ] Fonts preloaded (check Network tab)
+- [ ] LCP improved (Lighthouse mobile)
+- [ ] Hero paragraph passes WCAG AA contrast (4.5:1)
+
+---
+
+## Testing recommendations
+
+1. Lighthouse (mobile):
+   - LCP < 2.5s
+   - No render-blocking resources
+2. Accessibility:
+   - Contrast checker: all text ≥ 4.5:1
+   - Reduced motion: animations disabled
+3. Visual:
+   - Trust cues grouped with CTA
+   - Payment clarity visible
+   - Mobile responsive (2-3 lines for subcopy)
+
+---
+
+## Notes
+
+1. Card payment: The onramp system exists. Verify if Apple Pay/Google Pay are supported before adding to microcopy.
+2. Font preloading: Use actual font URLs from Google Fonts. The example URLs are placeholders.
+3. Performance: Test on slow 3G to verify LCP improvements.
+4. Reduced motion: Already implemented; verify it works across browsers.
+
+Should I provide the exact code snippets for each change, or do you want to implement them step by step?

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useReducedMotion } from '../../lib/animations';
 import { useTheme } from '../../context/ThemeContext';
+import { useEffectsPolicy } from '../../hooks/useEffectsPolicy';
 
 // Snow particle class
 class SnowParticle {
@@ -58,6 +59,17 @@ interface SnowParticlesProps {
   className?: string;
 }
 
+/**
+ * SnowParticles - Canvas-based snow particle animation.
+ * 
+ * Performance optimizations:
+ * - Mount policy: Only mounts if allowHeavyEffects is true (disabled on mobile/reduced motion)
+ * - IntersectionObserver: Pauses animation when offscreen (stops RAF loop)
+ * - FPS throttling: Capped at 30fps for decorative background
+ * - Reduced particle count on mobile (if mounted)
+ * 
+ * Mount policy over pause logic: If effects shouldn't run, component doesn't mount at all.
+ */
 const SnowParticles: React.FC<SnowParticlesProps> = ({
   intensity = 'medium',
   speed,
@@ -66,17 +78,34 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
+  const { allowHeavyEffects, isMobile } = useEffectsPolicy();
 
-  // Get particle count based on intensity
+  // Don't mount if heavy effects are not allowed
+  if (!allowHeavyEffects) {
+    return null;
+  }
+
+  // Get particle count based on intensity and device
   const getParticleCount = () => {
     if (shouldReduceMotion) return 5;
+    // Mobile: prefer not mounting, but if mounted, use fewer particles
+    if (isMobile) {
+      switch (intensity) {
+        case 'low': return 10;
+        case 'high': return 15;
+        case 'medium':
+        default: return 12;
+      }
+    }
+    // Desktop: reduced counts
     switch (intensity) {
       case 'low': return 20;
-      case 'high': return 60;
+      case 'high': return 30;
       case 'medium':
-      default: return 40;
+      default: return 25;
     }
   };
 
@@ -89,7 +118,7 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
   };
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !containerRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -134,14 +163,35 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
     }
 
     const snowColor = getSnowColor();
-    let animationFrameId: number;
+    let animationFrameId: number | null = null;
     let lastTime = performance.now();
-    const targetFPS = 60;
+    const targetFPS = 30; // Reduced from 60 to 30fps for decorative background
     const frameInterval = 1000 / targetFPS;
+    let isRunning = false;
+
+    // Explicit start/stop methods
+    const start = () => {
+      if (isRunning) return;
+      isRunning = true;
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    const stop = () => {
+      if (!isRunning) return;
+      isRunning = false;
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
 
     const animate = (currentTime: number) => {
+      if (!isRunning) return;
+
       const deltaTime = currentTime - lastTime;
       
+      // FPS throttle: only draw if enough time has passed
       if (deltaTime >= frameInterval) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -159,28 +209,70 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
       animationFrameId = requestAnimationFrame(animate);
     };
 
-    animationFrameId = requestAnimationFrame(animate);
+    // IntersectionObserver to pause when offscreen
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            start();
+          } else {
+            stop();
+          }
+        });
+      },
+      {
+        rootMargin: '50px', // Start/stop 50px before entering/exiting viewport
+      }
+    );
+
+    observer.observe(containerRef.current);
+
+    // Start animation initially if visible
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isVisible) {
+        start();
+      }
+    }
 
     return () => {
       window.removeEventListener('resize', resizeHandler);
-      cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
+      stop();
     };
   }, [intensity, speed, size, color, theme, shouldReduceMotion]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`absolute inset-0 pointer-events-none ${className}`}
-      style={{ 
-        willChange: 'transform',
-        imageRendering: 'pixelated',
-      }}
-      aria-hidden="true"
-    />
+    <div ref={containerRef} className="absolute inset-0 pointer-events-none">
+      <canvas
+        ref={canvasRef}
+        className={`absolute inset-0 ${className}`}
+        style={{ 
+          willChange: 'transform',
+          imageRendering: 'pixelated',
+        }}
+        aria-hidden="true"
+      />
+    </div>
   );
 };
 
-export default SnowParticles;
+// Memoize to prevent unnecessary re-renders when parent re-renders
+// Props are stable (intensity, speed, size, color, className don't change frequently)
+export default React.memo(SnowParticles, (prevProps, nextProps) => {
+  const sizeEqual = 
+    prevProps.size === nextProps.size ||
+    (prevProps.size?.min === nextProps.size?.min && prevProps.size?.max === nextProps.size?.max);
+  
+  return (
+    prevProps.intensity === nextProps.intensity &&
+    prevProps.speed === nextProps.speed &&
+    sizeEqual &&
+    prevProps.color === nextProps.color &&
+    prevProps.className === nextProps.className
+  );
+});
 
 
 

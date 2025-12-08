@@ -12,12 +12,23 @@ export interface HeroGiftCardRef {
   triggerUnwrap: () => void;
 }
 
+/**
+ * HeroGiftCard - Interactive gift card with tilt and sparkle effects.
+ * 
+ * Performance optimizations:
+ * - rAF batching: Mouse position stored in ref, updates batched via requestAnimationFrame
+ * - Direct style updates: Tilt transform applied directly (no React state/re-renders)
+ * - Sparkles memoized: Generated once per trigger, not on every render
+ * - forwardRef: Allows external control without prop drilling
+ */
 const HeroGiftCard = forwardRef<HeroGiftCardRef, HeroGiftCardProps>(({ onUnwrapTrigger }, ref) => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
   const [isUnwrapping, setIsUnwrapping] = useState(false);
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
+  const motionDivRef = useRef<HTMLDivElement>(null);
+  const mousePosRef = useRef({ x: 0, y: 0 });
+  const rafIdRef = useRef<number | null>(null);
   const { theme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
 
@@ -46,14 +57,40 @@ const HeroGiftCard = forwardRef<HeroGiftCardRef, HeroGiftCardProps>(({ onUnwrapT
 
   const ribbonColors = getRibbonColors();
 
-  // Handle mouse move for tilt
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current || shouldReduceMotion) return;
+  // Handle pointer move with rAF batching (no state updates = no re-renders)
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!cardRef.current || shouldReduceMotion || !isHovered) return;
+    
     const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setMousePosition({ x, y });
-  }, [shouldReduceMotion]);
+    // Store in ref (no state update)
+    mousePosRef.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+    
+    // Schedule single rAF update (batches multiple moves into one frame)
+    if (rafIdRef.current === null) {
+      rafIdRef.current = requestAnimationFrame(() => {
+        if (!motionDivRef.current || !cardRef.current) {
+          rafIdRef.current = null;
+          return;
+        }
+        
+        const centerX = cardRef.current.offsetWidth / 2;
+        const centerY = cardRef.current.offsetHeight / 2;
+        
+        // Calculate tilt
+        const tiltX = ((mousePosRef.current.y - centerY) / centerY) * 12;
+        const tiltY = ((centerX - mousePosRef.current.x) / centerX) * 12;
+        
+        // Apply transform directly via style (no React re-render)
+        // Use transform3d for better performance
+        motionDivRef.current.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.05)`;
+        
+        rafIdRef.current = null;
+      });
+    }
+  }, [shouldReduceMotion, isHovered]);
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
@@ -61,22 +98,24 @@ const HeroGiftCard = forwardRef<HeroGiftCardRef, HeroGiftCardProps>(({ onUnwrapT
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
-    setMousePosition({ x: 0, y: 0 });
+    mousePosRef.current = { x: 0, y: 0 };
+    // Reset tilt with smooth transition
+    if (motionDivRef.current) {
+      motionDivRef.current.style.transition = 'transform 0.3s ease-out';
+      motionDivRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+      // Remove transition after animation completes
+      setTimeout(() => {
+        if (motionDivRef.current) {
+          motionDivRef.current.style.transition = '';
+        }
+      }, 300);
+    }
+    // Cancel pending rAF
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
   }, []);
-
-  // Calculate tilt based on mouse position
-  const tilt = useMemo(() => {
-    if (!isHovered || shouldReduceMotion) return { x: 0, y: 0, scale: 1 };
-    
-    const centerX = cardRef.current?.offsetWidth ? cardRef.current.offsetWidth / 2 : 200;
-    const centerY = cardRef.current?.offsetHeight ? cardRef.current.offsetHeight / 2 : 150;
-    
-    const tiltX = ((mousePosition.y - centerY) / centerY) * 12; // Increased to ±12deg
-    const tiltY = ((centerX - mousePosition.x) / centerX) * 12;
-    const scale = 1.05; // Subtle scale on hover
-    
-    return { x: tiltX, y: tiltY, scale };
-  }, [mousePosition, isHovered, shouldReduceMotion]);
 
   // Periodic sparkle trigger
   useEffect(() => {
@@ -125,23 +164,22 @@ const HeroGiftCard = forwardRef<HeroGiftCardRef, HeroGiftCardProps>(({ onUnwrapT
     <div
       ref={cardRef}
       className="relative perspective-1000 pt-8"
-      onMouseMove={handleMouseMove}
+      onPointerMove={handlePointerMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={triggerUnwrap}
       style={{ cursor: 'pointer' }}
     >
       <motion.div
+        ref={motionDivRef}
+        // Tilt is handled via direct style updates in rAF (no React re-renders)
+        // Only use Framer Motion for scale animation on hover
         animate={
           !shouldReduceMotion && isHovered
             ? {
-                rotateX: tilt.x,
-                rotateY: tilt.y,
-                scale: tilt.scale,
+                scale: 1.05,
               }
             : {
-                rotateX: 0,
-                rotateY: 0,
                 scale: 1,
               }
         }

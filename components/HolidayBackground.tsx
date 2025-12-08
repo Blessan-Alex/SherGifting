@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useScroll, useTransform, motion, useReducedMotion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { useMotifConfig } from '../hooks/useMotifConfig';
+import { useEffectsPolicy } from '../hooks/useEffectsPolicy';
 import SnowParticles from './decorative/SnowParticles';
 import TwinklingLights from './decorative/TwinklingLights';
 
@@ -66,11 +67,15 @@ const HolidayBackground: React.FC<HolidayBackgroundProps> = ({
   const { theme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
   const { config } = useMotifConfig();
+  const { allowHeavyEffects } = useEffectsPolicy();
   
   // Use config if available, otherwise use props or defaults
   const snowIntensity = propSnowIntensity || config.snow.intensity;
   const lightIntensity = propLightIntensity || config.lights.intensity;
 
+  // Note: Using local useScroll with target for element-specific scroll tracking.
+  // This component tracks scroll relative to its own container, not the page.
+  // For page-level scroll, components should use useScrollMotion() from context.
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start end', 'end start'],
@@ -88,13 +93,13 @@ const HolidayBackground: React.FC<HolidayBackgroundProps> = ({
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-      {/* Snow particles */}
-      {shouldShowSnow && (
+      {/* Snow particles - only mount if heavy effects allowed */}
+      {shouldShowSnow && allowHeavyEffects && (
         <SnowParticles intensity={snowIntensity} />
       )}
 
-      {/* Twinkling lights */}
-      {shouldShowBokeh && (
+      {/* Twinkling lights - only mount if heavy effects allowed */}
+      {shouldShowBokeh && allowHeavyEffects && (
         <TwinklingLights intensity={lightIntensity} />
       )}
 

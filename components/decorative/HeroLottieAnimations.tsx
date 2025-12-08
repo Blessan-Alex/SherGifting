@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import LottieAnimation from './LottieAnimation';
+import LazyLottie from './LazyLottie';
 
 const HeroLottieAnimations: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -11,7 +11,8 @@ const HeroLottieAnimations: React.FC = () => {
       aria-hidden="true"
     >
       {/* Christmas Tree - Top right, complements the gift card */}
-      <LottieAnimation
+      {/* High priority: load immediately above the fold */}
+      <LazyLottie
         src="/assets/Christmas Tree Animation - 1699891737968.lottie"
         position={{ top: '5%', right: '0%' }}
         size={{
@@ -27,29 +28,12 @@ const HeroLottieAnimations: React.FC = () => {
         autoplay={true}
         speed={0.75}
         blendMode="soft-light"
-      />
-
-      {/* Christmas Gifts - Bottom left, balances the tree */}
-      <LottieAnimation
-        src="/assets/Christmas Gifts.lottie"
-        position={{ bottom: '0%', left: '0%' }}
-        size={{
-          width: '180px',
-          height: '180px',
-          mobileWidth: '120px',
-          mobileHeight: '120px',
-        }}
-        opacity={0.24}
-        parallaxSpeed={0}
-        zIndex={1}
-        loop={true}
-        autoplay={true}
-        speed={1}
-        blendMode="overlay"
+        priority="high"
       />
 
       {/* Wind Chimes - Top center-right, subtle accent */}
-      <LottieAnimation
+      {/* Low priority: load on scroll/idle */}
+      <LazyLottie
         src="/assets/Christmas wind chimes.lottie"
         position={{ top: '15%', right: '15%' }}
         size={{
@@ -65,6 +49,7 @@ const HeroLottieAnimations: React.FC = () => {
         autoplay={true}
         speed={0.85}
         blendMode="soft-light"
+        priority="low"
       />
     </div>
   );

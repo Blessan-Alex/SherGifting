@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Gift, Sparkles, ArrowRight, Shield, Link2, Building2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import GlowButton from '../components/UI/GlowButton';
+import { useEffectsPolicy } from '../hooks/useEffectsPolicy';
+import { ScrollMotionProvider } from '../context/ScrollMotionProvider';
 const HolidayBackground = React.lazy(() => import('../components/HolidayBackground'));
 const CursorGlow = React.lazy(() => import('../components/CursorGlow'));
 const HeroGiftCard = React.lazy(() => import('../components/HeroGiftCard'));
@@ -23,7 +25,9 @@ const LoginPage: React.FC = () => {
   const { login, logout, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [showLogout, setShowLogout] = React.useState(false);
+  const [showBackground, setShowBackground] = React.useState(false);
   const giftCardRef = React.useRef<HeroGiftCardRef>(null);
+  const { allowHeavyEffects } = useEffectsPolicy();
 
   // ✅ Redirect if already authenticated
   useEffect(() => {
@@ -31,6 +35,14 @@ const LoginPage: React.FC = () => {
       navigate('/');
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  // Defer background animation until after first paint
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowBackground(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogin = async () => {
     // Trigger unwrap animation on gift card
@@ -97,10 +109,11 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-[#0B1120]">
-      <HolidayBackground />
-      
-      <nav className="fixed top-0 w-full py-4 sm:py-6 px-4 sm:px-8 flex justify-between items-center z-50 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative">
+    <ScrollMotionProvider>
+      <div className="min-h-screen flex flex-col relative bg-[#0B1120]">
+        {showBackground && <HolidayBackground />}
+        
+        <nav className="fixed top-0 w-full py-4 sm:py-6 px-4 sm:px-8 flex justify-between items-center z-50 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative">
         <motion.div
           className="flex items-center gap-2"
           initial={{ opacity: 0, x: -20 }}
@@ -169,7 +182,12 @@ const LoginPage: React.FC = () => {
               </h1>
               
               <p className="text-body-lg text-[#CBD5E1] text-max-width mx-auto lg:mx-0 leading-relaxed animate-fade-in-up delay-200">
-                Create a secure gift link. They claim it with email/phone via Privy. No wallet address needed.
+                Pick an amount → choose a card → send a link. They claim by email/phone. No wallet needed.
+              </p>
+
+              {/* Payment clarity */}
+              <p className="text-sm text-[#CBD5E1] text-center lg:text-left animate-fade-in-up delay-250">
+                Pay by card (no crypto needed)
               </p>
 
               {/* CTAs */}
@@ -185,48 +203,56 @@ const LoginPage: React.FC = () => {
                   </GlowButton>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up delay-300">
-                  <GlowButton onClick={handleLogin} variant="primary" icon={ArrowRight} fullWidth className="sm:w-auto">
-                    Send a Gift
-                  </GlowButton>
-                  <GlowButton 
-                    onClick={() => scrollToSection('preview')} 
-                    variant="secondary" 
-                    fullWidth 
-                    className="sm:w-auto"
-                  >
-                    See recipient experience
-                  </GlowButton>
+                <div className="space-y-4 animate-fade-in-up delay-300">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <GlowButton onClick={handleLogin} variant="primary" icon={ArrowRight} fullWidth className="sm:w-auto">
+                      Send a Gift
+                    </GlowButton>
+                    <GlowButton 
+                      onClick={() => scrollToSection('preview')} 
+                      variant="secondary" 
+                      fullWidth 
+                      className="sm:w-auto"
+                    >
+                      Preview how they claim
+                    </GlowButton>
+                  </div>
+                  
+                  {/* Trust cues - moved directly under CTA */}
+                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-[#CBD5E1]">
+                    <div className="flex items-center gap-1.5">
+                      <Shield size={12} />
+                      <span>No wallet needed</span>
+                    </div>
+                    <span className="hidden sm:inline">•</span>
+                    <div className="flex items-center gap-1.5">
+                      <Link2 size={12} />
+                      <span>Link-based claiming</span>
+                    </div>
+                    <span className="hidden sm:inline">•</span>
+                    <div className="flex items-center gap-1.5">
+                      <Shield size={12} />
+                      <span>Powered by Privy</span>
+                    </div>
+                  </div>
                 </div>
               )}
-
-              {/* Micro trust row */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-[#94A3B8] animate-fade-in-up delay-400">
-                <div className="flex items-center gap-1.5">
-                  <Shield size={12} />
-                  <span>Powered by Privy</span>
-                </div>
-                <span className="hidden sm:inline">•</span>
-                <div className="flex items-center gap-1.5">
-                  <Link2 size={12} />
-                  <span>Link-based claiming</span>
-                </div>
-                <span className="hidden sm:inline">•</span>
-                <div className="flex items-center gap-1.5">
-                  <Building2 size={12} />
-                  <span>Built by Sher</span>
-                </div>
-              </div>
             </div>
 
             {/* Right Column - Visual */}
             <div className="block animate-fade-in-up delay-200 overflow-visible relative z-10">
               <Suspense fallback={<div className="h-64 w-full" />}>
-                <CursorGlow variant="spotlight">
+                {allowHeavyEffects ? (
+                  <CursorGlow variant="spotlight">
+                    <div className="flex justify-center items-center py-8">
+                      <HeroGiftCard ref={giftCardRef} />
+                    </div>
+                  </CursorGlow>
+                ) : (
                   <div className="flex justify-center items-center py-8">
                     <HeroGiftCard ref={giftCardRef} />
                   </div>
-                </CursorGlow>
+                )}
               </Suspense>
             </div>
           </div>
@@ -262,9 +288,10 @@ const LoginPage: React.FC = () => {
         <FinalCTA />
       </main>
 
-      {/* Footer */}
-      <Footer />
-    </div>
+        {/* Footer */}
+        <Footer />
+      </div>
+    </ScrollMotionProvider>
   );
 };
 

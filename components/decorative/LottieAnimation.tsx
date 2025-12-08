@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useTransform, useReducedMotion } from 'framer-motion';
 import Lottie, { LottieRefCurrentProps } from 'lottie-react';
 import JSZip from 'jszip';
+import { useScrollMotion } from '../../context/ScrollMotionProvider';
 
 interface LottieAnimationProps {
   src: string;
@@ -27,7 +28,7 @@ interface LottieAnimationProps {
   blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'soft-light';
 }
 
-const LottieAnimation: React.FC<LottieAnimationProps> = ({
+const LottieAnimation: React.FC<LottieAnimationProps> = React.memo(({
   src,
   position,
   size,
@@ -47,7 +48,8 @@ const LottieAnimation: React.FC<LottieAnimationProps> = ({
   const [animationData, setAnimationData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { scrollYProgress } = useScroll();
+  // Use centralized scroll tracking from context (no element-specific tracking needed)
+  const { scrollYProgress } = useScrollMotion();
 
   // Load animation data - handle both .json and .lottie (ZIP) files
   useEffect(() => {
@@ -173,7 +175,9 @@ const LottieAnimation: React.FC<LottieAnimationProps> = ({
       </div>
     </motion.div>
   );
-};
+});
+
+LottieAnimation.displayName = 'LottieAnimation';
 
 export default LottieAnimation;
 

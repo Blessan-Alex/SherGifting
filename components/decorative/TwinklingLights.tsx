@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
-import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { motion, useTransform, useMotionValue } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
+import { useEffectsPolicy } from '../../hooks/useEffectsPolicy';
+import { useScrollMotionOptional } from '../../context/ScrollMotionProvider';
 
 interface TwinklingLightsProps {
   intensity?: 'low' | 'medium' | 'high';
@@ -8,35 +10,101 @@ interface TwinklingLightsProps {
   className?: string;
 }
 
+// CSS keyframe animations injected via style tag
+const injectKeyframes = () => {
+  if (document.getElementById('twinkling-lights-keyframes')) return;
+
+  const style = document.createElement('style');
+  style.id = 'twinkling-lights-keyframes';
+  style.textContent = `
+    @keyframes twinkle-small {
+      0%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+    @keyframes twinkle-medium {
+      0%, 100% {
+        opacity: 0.4;
+        transform: scale(0.9);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.3);
+      }
+    }
+    @keyframes twinkle-large {
+      0%, 100% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+      50% {
+        opacity: 1.2;
+        transform: scale(1.4);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+};
+
+/**
+ * TwinklingLights - CSS keyframe-based twinkling light effects.
+ * 
+ * Performance optimizations:
+ * - Mount policy: Only mounts if allowHeavyEffects is true (disabled on mobile/reduced motion)
+ * - CSS keyframes: No JS animation loops, uses CSS animations for twinkling
+ * - Centralized scroll: Uses ScrollMotionProvider for parallax (no manual scroll listeners)
+ * - Reduced DOM count: 20/8/3 lights instead of 78+ animated elements
+ * - React.memo: Prevents re-renders when parent updates
+ * 
+ * Mount policy over pause logic: If effects shouldn't run, component doesn't mount at all.
+ */
 const TwinklingLights: React.FC<TwinklingLightsProps> = ({
   intensity = 'medium',
   pattern = 'scattered',
   className = '',
 }) => {
   const { theme } = useTheme();
-  const shouldReduceMotion = useReducedMotion();
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const { allowHeavyEffects, allowMediumEffects } = useEffectsPolicy();
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start'],
-  });
+  // Don't mount if heavy effects are not allowed
+  if (!allowHeavyEffects) {
+    return null;
+  }
 
-  const bokehY = useTransform(scrollYProgress, [0, 1], [0, -20]);
+  // Inject CSS keyframes on mount
+  useEffect(() => {
+    injectKeyframes();
+  }, []);
 
-  // Get light counts based on intensity
+  // Use centralized scroll tracking for parallax (no manual scroll listeners)
+  // Parallax effect: subtle vertical movement based on scroll
+  // Optional: if ScrollMotionProvider is not available (e.g., in loading screens), skip parallax
+  const scrollMotion = useScrollMotionOptional();
+  const parallaxY = scrollMotion
+    ? useTransform(
+        scrollMotion.scrollYProgress,
+        [0, 1],
+        [0, -100], // Subtle parallax: move up to 100px as user scrolls
+        { clamp: true }
+      )
+    : useMotionValue(0); // No parallax when provider is not available
+
+  // Get light counts - reduced DOM count: 20/8/3
   const getLightCounts = () => {
-    if (shouldReduceMotion) {
-      return { small: 10, medium: 4, large: 2 };
-    }
     switch (intensity) {
       case 'low':
-        return { small: 30, medium: 12, large: 5 };
+        return { small: 15, medium: 6, large: 2 };
       case 'high':
-        return { small: 100, medium: 30, large: 12 };
+        return { small: 25, medium: 10, large: 4 };
       case 'medium':
       default:
-        return { small: 50, medium: 20, large: 8 };
+        return { small: 20, medium: 8, large: 3 };
     }
   };
 
@@ -79,33 +147,33 @@ const TwinklingLights: React.FC<TwinklingLightsProps> = ({
     }
   };
 
-  // Generate bokeh lights
+  // Generate bokeh lights with CSS animation properties
   const bokehLights = useMemo(() => {
     const small = Array.from({ length: lightCounts.small }, (_, i) => ({
       id: `small-${i}`,
       ...generatePositions(lightCounts.small, i, pattern),
       size: Math.random() * 2 + 2, // 2-4px
-      delay: `${i * 0.05}s`,
+      delay: i * 0.05, // seconds
+      duration: Math.random() * 1 + 1, // 1-2s cycle
       opacity: Math.random() * 0.4 + 0.2,
-      cycle: Math.random() * 1 + 1, // 1-2s cycle
     }));
 
     const medium = Array.from({ length: lightCounts.medium }, (_, i) => ({
       id: `medium-${i}`,
       ...generatePositions(lightCounts.medium, i, pattern),
       size: Math.random() * 4 + 4, // 4-8px
-      delay: `${i * 0.15}s`,
+      delay: i * 0.15, // seconds
+      duration: Math.random() * 1 + 3, // 3-4s cycle
       opacity: Math.random() * 0.5 + 0.3,
-      cycle: Math.random() * 1 + 3, // 3-4s cycle
     }));
 
     const large = Array.from({ length: lightCounts.large }, (_, i) => ({
       id: `large-${i}`,
       ...generatePositions(lightCounts.large, i, pattern),
       size: Math.random() * 20 + 20, // 20-40px
-      delay: `${i * 0.8}s`,
+      delay: i * 0.8, // seconds
+      duration: Math.random() * 2 + 6, // 6-8s cycle
       opacity: Math.random() * 0.3 + 0.2,
-      cycle: Math.random() * 2 + 6, // 6-8s cycle
     }));
 
     return { small, medium, large };
@@ -113,103 +181,85 @@ const TwinklingLights: React.FC<TwinklingLightsProps> = ({
 
   return (
     <div ref={containerRef} className={`absolute inset-0 pointer-events-none ${className}`} aria-hidden="true">
-      {/* Small dots - fast twinkle */}
-      {bokehLights.small.map((light) => (
-        <motion.div
-          key={light.id}
-          className="absolute rounded-full"
-          style={{
-            top: light.top,
-            left: light.left,
-            width: `${light.size}px`,
-            height: `${light.size}px`,
-            background: getBokehGradient(light.opacity),
-            y: bokehY,
-            willChange: !shouldReduceMotion ? 'transform, opacity' : 'auto',
-          }}
-          animate={
-            !shouldReduceMotion
-              ? {
-                  opacity: [light.opacity * 0.3, light.opacity, light.opacity * 0.3],
-                  scale: [0.8, 1.2, 0.8],
-                }
-              : {}
-          }
-          transition={{
-            duration: light.cycle,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: parseFloat(light.delay),
-          }}
-        />
-      ))}
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          y: allowMediumEffects ? parallaxY : 0,
+        }}
+      >
+        {/* Small dots - fast twinkle */}
+        {bokehLights.small.map((light) => (
+          <div
+            key={light.id}
+            className="absolute rounded-full"
+            style={{
+              top: light.top,
+              left: light.left,
+              width: `${light.size}px`,
+              height: `${light.size}px`,
+              background: getBokehGradient(light.opacity),
+              animation: allowMediumEffects
+                ? `twinkle-small ${light.duration}s ease-in-out infinite`
+                : 'none',
+              animationDelay: `${light.delay}s`,
+              willChange: allowMediumEffects ? 'transform, opacity' : 'auto',
+            }}
+          />
+        ))}
 
-      {/* Medium dots - medium twinkle */}
-      {bokehLights.medium.map((light) => (
-        <motion.div
-          key={light.id}
-          className="absolute rounded-full"
-          style={{
-            top: light.top,
-            left: light.left,
-            width: `${light.size}px`,
-            height: `${light.size}px`,
-            background: getBokehGradient(light.opacity),
-            filter: 'blur(2px)',
-            y: bokehY,
-            willChange: !shouldReduceMotion ? 'transform, opacity' : 'auto',
-          }}
-          animate={
-            !shouldReduceMotion
-              ? {
-                  opacity: [light.opacity * 0.4, light.opacity, light.opacity * 0.4],
-                  scale: [0.9, 1.3, 0.9],
-                }
-              : {}
-          }
-          transition={{
-            duration: light.cycle,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: parseFloat(light.delay),
-          }}
-        />
-      ))}
+        {/* Medium dots - medium twinkle */}
+        {bokehLights.medium.map((light) => (
+          <div
+            key={light.id}
+            className="absolute rounded-full"
+            style={{
+              top: light.top,
+              left: light.left,
+              width: `${light.size}px`,
+              height: `${light.size}px`,
+              background: getBokehGradient(light.opacity),
+              filter: 'blur(2px)',
+              animation: allowMediumEffects
+                ? `twinkle-medium ${light.duration}s ease-in-out infinite`
+                : 'none',
+              animationDelay: `${light.delay}s`,
+              willChange: allowMediumEffects ? 'transform, opacity' : 'auto',
+            }}
+          />
+        ))}
 
-      {/* Large bokeh orbs - slow pulse */}
-      {bokehLights.large.map((light) => (
-        <motion.div
-          key={light.id}
-          className="absolute rounded-full"
-          style={{
-            top: light.top,
-            left: light.left,
-            width: `${light.size}px`,
-            height: `${light.size}px`,
-            background: getBokehGradient(light.opacity),
-            filter: 'blur(8px)',
-            y: bokehY,
-            willChange: !shouldReduceMotion ? 'transform, opacity' : 'auto',
-          }}
-          animate={
-            !shouldReduceMotion
-              ? {
-                  opacity: [light.opacity * 0.5, light.opacity * 1.2, light.opacity * 0.5],
-                  scale: [0.8, 1.4, 0.8],
-                }
-              : {}
-          }
-          transition={{
-            duration: light.cycle,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: parseFloat(light.delay),
-          }}
-        />
-      ))}
+        {/* Large bokeh orbs - slow pulse */}
+        {bokehLights.large.map((light) => (
+          <div
+            key={light.id}
+            className="absolute rounded-full"
+            style={{
+              top: light.top,
+              left: light.left,
+              width: `${light.size}px`,
+              height: `${light.size}px`,
+              background: getBokehGradient(light.opacity),
+              filter: 'blur(8px)',
+              animation: allowMediumEffects
+                ? `twinkle-large ${light.duration}s ease-in-out infinite`
+                : 'none',
+              animationDelay: `${light.delay}s`,
+              willChange: allowMediumEffects ? 'transform, opacity' : 'auto',
+            }}
+            />
+        ))}
+      </motion.div>
     </div>
   );
 };
 
-export default TwinklingLights;
+// Memoize to prevent unnecessary re-renders when parent re-renders
+// Props are stable (intensity, pattern, className don't change frequently)
+export default React.memo(TwinklingLights, (prevProps, nextProps) => {
+  return (
+    prevProps.intensity === nextProps.intensity &&
+    prevProps.pattern === nextProps.pattern &&
+    prevProps.className === nextProps.className
+  );
+});
 
