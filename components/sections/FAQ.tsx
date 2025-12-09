@@ -16,7 +16,11 @@ const FAQ: React.FC = () => {
     },
     {
       question: "Is it safe?",
-      answer: "Yes. The link we send is a \"Magic Link\" secured by bank-grade encryption. Only the person with access to that email address can claim the funds.",
+      answer: "Yes. The link we send is a secure \"Magic Link\" powered by Privy. Only the person with access to that email address can claim the funds. We never store your private keys or wallet credentials.",
+    },
+    {
+      question: "What can they do after they redeem?",
+      answer: "They can hold the crypto, cash it out instantly, or transfer it to their own wallet. Full control, no restrictions.",
     },
     {
       question: "What assets can I send?",

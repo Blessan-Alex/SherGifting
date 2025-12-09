@@ -70,7 +70,7 @@ const FinalCTA: React.FC = () => {
   const colors = getColors();
 
   // Generate sparkle particles
-  const sparkles = Array.from({ length: 12 }, (_, i) => ({
+  const sparkles = Array.from({ length: 6 }, (_, i) => ({
     id: i,
     left: Math.random() * 100,
     top: Math.random() * 100,
@@ -198,7 +198,7 @@ const FinalCTA: React.FC = () => {
                 </GlowButton>
               </div>
               <p className="text-sm text-[#64748B] mt-6">
-                No credit card required for setup.
+                Free to try
               </p>
             </motion.div>
           </div>

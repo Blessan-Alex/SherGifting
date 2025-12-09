@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Shield, Lock } from 'lucide-react';
 import GlassCard from '../UI/GlassCard';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -18,18 +18,6 @@ const TrustSecurity: React.FC = () => {
       title: 'Secure Magic Links',
       description: 'Each gift link is encrypted and can only be claimed by the intended recipient. No wallet addresses needed—just email or phone.',
     },
-    {
-      icon: CheckCircle,
-      title: 'Blockchain Verified',
-      description: 'All transactions are recorded on Solana blockchain. Transparent, immutable, and verifiable.',
-    },
-  ];
-
-  const disclaimers = [
-    'Gifts are secured by encrypted links that only the recipient can claim.',
-    'All transactions are processed on Solana blockchain for transparency.',
-    'We never store your private keys or wallet credentials.',
-    '48-hour refund guarantee if gift is not claimed.',
   ];
 
   // Get theme-aware colors
@@ -74,7 +62,7 @@ const TrustSecurity: React.FC = () => {
         </motion.div>
 
         {/* Security Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-12 max-w-4xl mx-auto">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
@@ -127,36 +115,14 @@ const TrustSecurity: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Disclaimers */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <GlassCard variant="holiday" className="p-8">
-            <div className="flex items-start gap-3 mb-6">
-              <AlertCircle size={24} className="text-[#94A3B8] flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="text-lg font-bold text-white mb-4">Important Information</h3>
-                <ul className="space-y-3">
-                  {disclaimers.map((disclaimer, index) => (
-                    <li key={index} className="flex items-start gap-3 text-[#94A3B8]">
-                      <CheckCircle size={16} className="text-[#10B981] flex-shrink-0 mt-1" />
-                      <span className="text-body">{disclaimer}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </GlassCard>
-        </motion.div>
       </div>
     </section>
   );
 };
 
 export default TrustSecurity;
+
+
 
 
 

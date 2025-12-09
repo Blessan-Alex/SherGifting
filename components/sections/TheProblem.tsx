@@ -31,7 +31,7 @@ const TheProblem: React.FC = () => {
               The "Old Way" <br /> is <span className="text-[#BE123C]">Broken.</span>
             </h2>
             <p className="text-body-lg text-[#94A3B8] leading-relaxed">
-              You spend $50 on an Amazon gift card. They lose it in a drawer. Or you send cash via Venmo, and it gets eaten by inflation. It's boring, forgettable, and shrinking in value.
+              Gift cards get lost. Cash loses value. The old way is broken.
             </p>
 
             <div className="space-y-4">

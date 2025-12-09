@@ -13,7 +13,7 @@ const HowItWorks: React.FC = () => {
     {
       icon: Mail,
       title: 'Enter Email',
-      description: 'Type their email address and choose an amount. $100 in Bitcoin, USDC, or SOL.',
+      description: 'Type their email address and choose an amount. Pick Bitcoin, USDC, or SOL.',
     },
     {
       icon: Sparkles,
@@ -22,8 +22,8 @@ const HowItWorks: React.FC = () => {
     },
     {
       icon: CheckCircle,
-      title: 'They Own It',
-      description: 'One click and the assets are theirs. They can hold for growth, save, or cash out instantly.',
+      title: 'They Receive It',
+      description: 'One click and the gift is theirs. They can hold, save, or cash out instantly.',
     },
   ];
 
@@ -50,9 +50,9 @@ const HowItWorks: React.FC = () => {
   const iconColors = getIconColors();
 
   // Generate sparkle particles for hover effect
-  const sparkles = Array.from({ length: 6 }, (_, i) => ({
+  const sparkles = Array.from({ length: 3 }, (_, i) => ({
     id: i,
-    angle: (i * 60) * (Math.PI / 180),
+    angle: (i * 120) * (Math.PI / 180),
     distance: 40,
   }));
 
@@ -66,9 +66,9 @@ const HowItWorks: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12 lg:mb-16"
         >
-          <h2 className="text-h2 font-bold text-white mb-4">Send Wealth Like An Email</h2>
+          <h2 className="text-h2 font-bold text-white mb-4">Send a gift like an email</h2>
           <p className="text-body-lg text-[#94A3B8] max-w-2xl mx-auto">
-            No tech skills required. If you can send a Gmail, you can send an asset.
+            No tech skills required. If you can send an email, you can send a gift.
           </p>
         </motion.div>
 

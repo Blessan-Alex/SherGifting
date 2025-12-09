@@ -13,7 +13,6 @@ import type { HeroGiftCardRef } from '../components/HeroGiftCard';
 import TheProblem from '../components/sections/TheProblem';
 import HowItWorks from '../components/sections/HowItWorks';
 import RecipientExperience from '../components/sections/RecipientExperience';
-import Comparison from '../components/sections/Comparison';
 import RiskReversal from '../components/sections/RiskReversal';
 import TrustSecurity from '../components/sections/TrustSecurity';
 import FAQ from '../components/sections/FAQ';
@@ -271,9 +270,6 @@ const LoginPage: React.FC = () => {
 
         {/* Recipient Experience Section */}
         <RecipientExperience />
-
-        {/* Comparison Section */}
-        <Comparison />
 
         {/* Risk Reversal Section */}
         <RiskReversal />
