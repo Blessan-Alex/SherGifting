@@ -79,7 +79,7 @@ const FinalCTA: React.FC = () => {
   }));
 
   return (
-    <section className="relative py-16 lg:py-24 overflow-hidden">
+    <section id="get-started" className="relative py-16 lg:py-24 overflow-hidden">
       {/* Enhanced background with animated gradient */}
       <motion.div
         className="absolute inset-0"

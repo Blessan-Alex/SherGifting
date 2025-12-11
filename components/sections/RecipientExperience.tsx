@@ -105,7 +105,7 @@ const RecipientExperience: React.FC = () => {
           >
             <h2 className="text-h2 font-bold text-white mb-6">What recipients see</h2>
             <p className="text-body-lg text-[#CBD5E1] text-max-width mx-auto lg:mx-0 mb-6 leading-relaxed">
-              When someone receives your gift link, they see a beautiful, wrapped gift card. With one click, they can claim it using their email or phone—no wallet needed.
+              When someone receives your gift link, they see a beautiful, wrapped gift card. With one click, they can claim it using their email or phone, no wallet needed.
             </p>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
@@ -123,7 +123,7 @@ const RecipientExperience: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-h3 font-bold text-white mb-1">Claim with email or phone</h3>
-                  <p className="text-body text-[#94A3B8]">Powered by Privy—secure and instant</p>
+                  <p className="text-body text-[#94A3B8]">Powered by Privy. Secure and instant.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">

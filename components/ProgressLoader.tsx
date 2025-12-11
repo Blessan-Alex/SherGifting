@@ -52,7 +52,7 @@ const loadingTips: LoadingTip[] = [
   {
     icon: Users,
     title: 'Gift to Anyone',
-    text: 'Recipients don\'t need a wallet—they can claim and set one up instantly',
+    text: 'Recipients don\'t need a wallet. They can claim and set one up instantly',
     color: 'text-[#06B6D4]'
   },
   {
@@ -88,7 +88,7 @@ const loadingTips: LoadingTip[] = [
   {
     icon: Infinity,
     title: 'No Expiry',
-    text: 'Gift links never expire—recipients can claim whenever they\'re ready',
+    text: 'Gift links never expire. Recipients can claim whenever they\'re ready',
     color: 'text-[#06B6D4]'
   },
   {

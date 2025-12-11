@@ -5,7 +5,7 @@ import GlassCard from '../UI/GlassCard';
 
 const RiskReversal: React.FC = () => {
   return (
-    <section className="relative py-16 lg:py-24 overflow-hidden">
+    <section id="risk-reversal" className="relative py-16 lg:py-24 overflow-hidden">
       {/* Static gradient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#10B981]/10 rounded-full blur-[120px] pointer-events-none" />
 

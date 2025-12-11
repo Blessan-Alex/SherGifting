@@ -1,8 +1,8 @@
 import React, { useEffect, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Gift, Sparkles, ArrowRight, Shield, Link2, Building2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Gift, Sparkles, ArrowRight, Shield, Link2, Building2, Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import GlowButton from '../components/UI/GlowButton';
 import { useEffectsPolicy } from '../hooks/useEffectsPolicy';
 import { ScrollMotionProvider } from '../context/ScrollMotionProvider';
@@ -14,7 +14,6 @@ import TheProblem from '../components/sections/TheProblem';
 import HowItWorks from '../components/sections/HowItWorks';
 import RecipientExperience from '../components/sections/RecipientExperience';
 import RiskReversal from '../components/sections/RiskReversal';
-import TrustSecurity from '../components/sections/TrustSecurity';
 import FAQ from '../components/sections/FAQ';
 import FinalCTA from '../components/sections/FinalCTA';
 import Footer from '../components/Footer';
@@ -25,6 +24,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [showLogout, setShowLogout] = React.useState(false);
   const [showBackground, setShowBackground] = React.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const giftCardRef = React.useRef<HeroGiftCardRef>(null);
   const { allowHeavyEffects } = useEffectsPolicy();
 
@@ -131,32 +131,116 @@ const LoginPage: React.FC = () => {
         </motion.div>
         
         {/* Middle navigation - centered, hidden on mobile */}
-        <div className="hidden lg:flex items-center gap-6 absolute left-1/2 transform -translate-x-1/2">
+        <div className="hidden lg:flex items-center gap-4 absolute left-1/2 transform -translate-x-1/2">
+          <button
+            onClick={() => scrollToSection('the-problem')}
+            className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors"
+          >
+            Problem
+          </button>
+          <span className="text-[#64748B]">•</span>
           <button
             onClick={() => scrollToSection('how-it-works')}
             className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors"
           >
             How it works
           </button>
-          <span className="text-[#94A3B8]">•</span>
+          <span className="text-[#64748B]">•</span>
           <button
             onClick={() => scrollToSection('preview')}
             className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors"
           >
             Preview
           </button>
-          <span className="text-[#94A3B8]">•</span>
+          <span className="text-[#64748B]">•</span>
+          <button
+            onClick={() => scrollToSection('risk-reversal')}
+            className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors"
+          >
+            Guarantee
+          </button>
+          <span className="text-[#64748B]">•</span>
           <button
             onClick={() => scrollToSection('faq')}
             className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors"
           >
-            FAQs
+            FAQ
           </button>
         </div>
+        
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden text-[#94A3B8] hover:text-white transition-colors p-2"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
         
         {/* Spacer to balance the layout */}
         <div className="hidden lg:block w-[200px]"></div>
       </nav>
+
+      {/* Mobile menu dropdown */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden fixed top-16 left-0 right-0 z-40 bg-[#0B1120]/95 backdrop-blur-md border-b border-white/5"
+          >
+          <div className="px-4 py-4 space-y-3">
+            <button
+              onClick={() => {
+                scrollToSection('the-problem');
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full text-left text-sm font-medium text-[#94A3B8] hover:text-white transition-colors py-2"
+            >
+              Problem
+            </button>
+            <button
+              onClick={() => {
+                scrollToSection('how-it-works');
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full text-left text-sm font-medium text-[#94A3B8] hover:text-white transition-colors py-2"
+            >
+              How it works
+            </button>
+            <button
+              onClick={() => {
+                scrollToSection('preview');
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full text-left text-sm font-medium text-[#94A3B8] hover:text-white transition-colors py-2"
+            >
+              Preview
+            </button>
+            <button
+              onClick={() => {
+                scrollToSection('risk-reversal');
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full text-left text-sm font-medium text-[#94A3B8] hover:text-white transition-colors py-2"
+            >
+              Guarantee
+            </button>
+            <button
+              onClick={() => {
+                scrollToSection('faq');
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full text-left text-sm font-medium text-[#94A3B8] hover:text-white transition-colors py-2"
+            >
+              FAQ
+            </button>
+          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-8 sm:pb-12 lg:pb-16 relative z-10">
         <div className="w-full max-w-7xl mx-auto">
@@ -176,7 +260,7 @@ const LoginPage: React.FC = () => {
               
               <h1 className="text-h1 font-bold text-white tracking-tight animate-fade-in-up delay-100 drop-shadow-2xl">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BE123C] via-[#FCD34D] to-[#BE123C] bg-size-200 animate-gradient">
-                  Send crypto gifts in 60 seconds — wrapped for the holidays.
+                  Send crypto gifts in 60 seconds, wrapped for the holidays.
                 </span>
               </h1>
               
@@ -273,9 +357,6 @@ const LoginPage: React.FC = () => {
 
         {/* Risk Reversal Section */}
         <RiskReversal />
-
-        {/* Trust & Security Section */}
-        <TrustSecurity />
 
         {/* FAQ Section */}
         <FAQ />

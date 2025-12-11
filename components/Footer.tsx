@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Gift } from 'lucide-react';
+import { Gift, Instagram, Youtube, Linkedin, Twitter, Music } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const Footer: React.FC = () => {
@@ -27,6 +27,35 @@ const Footer: React.FC = () => {
   };
 
   const colors = getColors();
+
+  // Social media links
+  const socialLinks = [
+    {
+      name: 'Instagram',
+      url: 'https://www.instagram.com/cryptogiftingapp/',
+      icon: Instagram,
+    },
+    {
+      name: 'YouTube',
+      url: 'https://www.youtube.com/@CryptoGiftingApp',
+      icon: Youtube,
+    },
+    {
+      name: 'LinkedIn',
+      url: '#', // TODO: Add LinkedIn URL
+      icon: Linkedin,
+    },
+    {
+      name: 'X (Twitter)',
+      url: '#', // TODO: Add X/Twitter URL
+      icon: Twitter,
+    },
+    {
+      name: 'TikTok',
+      url: '#', // TODO: Add TikTok URL
+      icon: Music, // Using Music icon as TikTok icon may not be available
+    },
+  ];
 
   return (
     <footer className="border-t border-white/10 py-8 px-4 sm:px-6 lg:px-8 relative">
@@ -57,6 +86,37 @@ const Footer: React.FC = () => {
           <p className="text-sm text-[#94A3B8]">
             by <span style={{ color: colors.brand }} className="font-semibold">Sher</span>
           </p>
+        </motion.div>
+
+        {/* Social Media Links */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex justify-center items-center gap-4 mb-8"
+        >
+          {socialLinks.map((social, index) => {
+            const Icon = social.icon;
+            return (
+              <motion.a
+                key={social.name}
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#94A3B8] hover:text-white transition-colors"
+                whileHover={{ scale: 1.15, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+                aria-label={social.name}
+              >
+                <Icon size={20} strokeWidth={2} />
+              </motion.a>
+            );
+          })}
         </motion.div>
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">

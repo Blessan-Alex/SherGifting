@@ -24,7 +24,7 @@ const FAQ: React.FC = () => {
     },
     {
       question: "What assets can I send?",
-      answer: "You can send Bitcoin, Crypto, Stablecoins, Tokenized Stocks, Tokenized Gold, or other major assets. The recipient sees the value immediately.",
+      answer: "You can send any Solana (SPL) tokens you have in your wallet, including SOL, USDC, and other Solana-based cryptocurrencies. The recipient sees the value immediately.",
     },
     {
       question: "What happens if they don't claim it?",
