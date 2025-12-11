@@ -8,8 +8,8 @@ import { useScroll, MotionValue } from 'framer-motion';
  * cause performance issues. Instead, we call useScroll() once at the page level
  * and provide the scrollYProgress via context.
  * 
- * Note: Components that need element-specific scroll tracking (with target option)
- * may still use local useScroll() hooks, but should document why.
+ * Use this for page-level scroll. Element-specific tracking (with target option)
+ * should be rare and documented.
  */
 interface ScrollMotionContextValue {
   scrollYProgress: MotionValue<number>;

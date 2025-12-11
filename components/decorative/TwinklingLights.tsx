@@ -1,8 +1,6 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { motion, useTransform, useMotionValue } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import { useEffectsPolicy } from '../../hooks/useEffectsPolicy';
-import { useScrollMotionOptional } from '../../context/ScrollMotionProvider';
 
 interface TwinklingLightsProps {
   intensity?: 'low' | 'medium' | 'high';
@@ -82,29 +80,16 @@ const TwinklingLights: React.FC<TwinklingLightsProps> = ({
     injectKeyframes();
   }, []);
 
-  // Use centralized scroll tracking for parallax (no manual scroll listeners)
-  // Parallax effect: subtle vertical movement based on scroll
-  // Optional: if ScrollMotionProvider is not available (e.g., in loading screens), skip parallax
-  const scrollMotion = useScrollMotionOptional();
-  const parallaxY = scrollMotion
-    ? useTransform(
-        scrollMotion.scrollYProgress,
-        [0, 1],
-        [0, -100], // Subtle parallax: move up to 100px as user scrolls
-        { clamp: true }
-      )
-    : useMotionValue(0); // No parallax when provider is not available
-
-  // Get light counts - reduced DOM count: 20/8/3
+  // Get light counts - reduced DOM count: max 12 total (10-12 lights)
   const getLightCounts = () => {
     switch (intensity) {
       case 'low':
-        return { small: 15, medium: 6, large: 2 };
+        return { small: 5, medium: 3, large: 1 };
       case 'high':
-        return { small: 25, medium: 10, large: 4 };
+        return { small: 10, medium: 5, large: 2 };
       case 'medium':
       default:
-        return { small: 20, medium: 8, large: 3 };
+        return { small: 8, medium: 4, large: 1 };
     }
   };
 
@@ -181,12 +166,7 @@ const TwinklingLights: React.FC<TwinklingLightsProps> = ({
 
   return (
     <div ref={containerRef} className={`absolute inset-0 pointer-events-none ${className}`} aria-hidden="true">
-      <motion.div
-        className="absolute inset-0"
-        style={{
-          y: allowMediumEffects ? parallaxY : 0,
-        }}
-      >
+      <div className="absolute inset-0">
         {/* Small dots - fast twinkle */}
         {bokehLights.small.map((light) => (
           <div
@@ -248,7 +228,7 @@ const TwinklingLights: React.FC<TwinklingLightsProps> = ({
             }}
             />
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 };

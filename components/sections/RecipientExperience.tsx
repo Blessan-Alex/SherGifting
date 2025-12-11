@@ -14,13 +14,13 @@ const RecipientExperience: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
   
   // Note: Using local useScroll with target for element-specific scroll tracking.
-  // This component tracks scroll relative to its own section, not the page.
+  // This is needed for whileInView animations that trigger when section enters viewport.
   // For page-level scroll, components should use useScrollMotion() from context.
+  // Parallax transforms removed for performance - using static positioning only.
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start end', 'end start'],
   });
-  const y = useTransform(scrollYProgress, [0, 1], [0, -30]);
 
   // Get theme-aware ribbon colors
   const getRibbonColors = () => {
@@ -140,7 +140,6 @@ const RecipientExperience: React.FC = () => {
 
           {/* Right: Phone Mock/Preview */}
           <motion.div
-            style={{ y }}
             initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-300px' }}

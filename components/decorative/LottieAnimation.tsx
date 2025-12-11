@@ -1,8 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useTransform, useReducedMotion } from 'framer-motion';
-import Lottie, { LottieRefCurrentProps } from 'lottie-react';
-import JSZip from 'jszip';
-import { useScrollMotion } from '../../context/ScrollMotionProvider';
+import { useReducedMotion } from 'framer-motion';
 
 interface LottieAnimationProps {
   src: string;
@@ -19,7 +16,6 @@ interface LottieAnimationProps {
     mobileHeight?: string;
   };
   opacity?: number;
-  parallaxSpeed?: number;
   zIndex?: number;
   loop?: boolean;
   autoplay?: boolean;
@@ -33,7 +29,6 @@ const LottieAnimation: React.FC<LottieAnimationProps> = React.memo(({
   position,
   size,
   opacity = 0.3,
-  parallaxSpeed = 0.2,
   zIndex = 1,
   loop = true,
   autoplay = true,
@@ -41,20 +36,23 @@ const LottieAnimation: React.FC<LottieAnimationProps> = React.memo(({
   className = '',
   blendMode = 'soft-light',
 }) => {
-  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  const lottieRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
+  const [LottieComponent, setLottieComponent] = useState<React.ComponentType<any> | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [animationData, setAnimationData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Use centralized scroll tracking from context (no element-specific tracking needed)
-  const { scrollYProgress } = useScrollMotion();
-
-  // Load animation data - handle both .json and .lottie (ZIP) files
+  // Load Lottie component and animation data - handle both .json and .lottie (ZIP) files
   useEffect(() => {
     const loadAnimation = async () => {
       try {
+        // Dynamically import Lottie player
+        const LottieModule = await import('lottie-react');
+        const Lottie = LottieModule.default;
+        setLottieComponent(() => Lottie);
+
         const response = await fetch(src);
         
         if (!response.ok) {
@@ -63,6 +61,7 @@ const LottieAnimation: React.FC<LottieAnimationProps> = React.memo(({
 
         // Check if it's a .lottie file (ZIP archive)
         if (src.endsWith('.lottie')) {
+          const JSZip = (await import('jszip')).default;
           const arrayBuffer = await response.arrayBuffer();
           const zip = await JSZip.loadAsync(arrayBuffer);
           
@@ -114,40 +113,28 @@ const LottieAnimation: React.FC<LottieAnimationProps> = React.memo(({
     }
   }, [isLoaded, shouldReduceMotion, autoplay]);
 
-  // Parallax effect
-  const parallaxY = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [0, parallaxSpeed * 30],
-    { clamp: true }
-  );
-
-  // Opacity on scroll
-  const scrollOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.5, 1],
-    [opacity, opacity * 1.1, opacity * 0.9],
-    { clamp: true }
-  );
 
   if (error) {
     // Silently fail - don't render anything on error
     return null;
   }
 
-  if (!isLoaded || !animationData) {
+  if (!isLoaded || !animationData || !LottieComponent) {
     return null;
   }
 
+  /**
+   * Use Lottie only for hero-level motion. Max 1 Lottie per screen. 
+   * Prefer static WebP/PNG or CSS animations for decorative elements.
+   */
   return (
-    <motion.div
+    <div
       ref={containerRef}
       className={`absolute pointer-events-none ${className}`}
       style={{
         ...position,
         zIndex,
-        y: shouldReduceMotion ? 0 : parallaxY,
-        opacity: shouldReduceMotion ? opacity : scrollOpacity,
+        opacity,
       }}
       aria-hidden="true"
     >
@@ -160,20 +147,22 @@ const LottieAnimation: React.FC<LottieAnimationProps> = React.memo(({
           filter: 'brightness(1.1)',
         }}
       >
-        <Lottie
-          lottieRef={lottieRef}
-          animationData={animationData}
-          loop={loop}
-          autoplay={autoplay && !shouldReduceMotion}
-          speed={speed}
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
-          className="lottie-animation"
-        />
+        {LottieComponent && (
+          <LottieComponent
+            lottieRef={lottieRef}
+            animationData={animationData}
+            loop={loop}
+            autoplay={autoplay && !shouldReduceMotion}
+            speed={speed}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+            className="lottie-animation"
+          />
+        )}
       </div>
-    </motion.div>
+    </div>
   );
 });
 

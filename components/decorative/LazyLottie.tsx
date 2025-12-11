@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { motion, useTransform, useReducedMotion } from 'framer-motion';
-import { useScrollMotion } from '../../context/ScrollMotionProvider';
+import { useReducedMotion } from 'framer-motion';
 import { useEffectsPolicy } from '../../hooks/useEffectsPolicy';
 
 interface LazyLottieProps {
@@ -18,7 +17,6 @@ interface LazyLottieProps {
     mobileHeight?: string;
   };
   opacity?: number;
-  parallaxSpeed?: number;
   zIndex?: number;
   loop?: boolean;
   autoplay?: boolean;
@@ -40,13 +38,15 @@ interface LazyLottieProps {
  * - Respects effects policy (shows static only if heavy effects disabled)
  * - High priority: loads immediately when in view
  * - Low priority: waits for requestIdleCallback or scroll
+ * 
+ * Use Lottie only for hero-level motion. Max 1 Lottie per screen. 
+ * Prefer static WebP/PNG or CSS animations for decorative elements.
  */
 const LazyLottie: React.FC<LazyLottieProps> = ({
   src,
   position,
   size,
   opacity = 0.3,
-  parallaxSpeed = 0.2,
   zIndex = 1,
   loop = true,
   autoplay = true,
@@ -64,9 +64,6 @@ const LazyLottie: React.FC<LazyLottieProps> = ({
   const [LottieComponent, setLottieComponent] = useState<React.ComponentType<any> | null>(null);
   const [animationData, setAnimationData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Use centralized scroll tracking from context (no element-specific tracking needed)
-  const { scrollYProgress } = useScrollMotion();
 
   // IntersectionObserver to detect when component is near viewport
   useEffect(() => {
@@ -165,22 +162,6 @@ const LazyLottie: React.FC<LazyLottieProps> = ({
     loadLottie();
   }, [shouldLoad, allowHeavyEffects, src]);
 
-  // Parallax effect
-  const parallaxY = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [0, parallaxSpeed * 30],
-    { clamp: true }
-  );
-
-  // Opacity on scroll
-  const scrollOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.5, 1],
-    [opacity, opacity * 1.1, opacity * 0.9],
-    { clamp: true }
-  );
-
   // Memoize container style to prevent re-renders
   const containerStyle = useMemo(
     () => ({
@@ -254,13 +235,12 @@ const LazyLottie: React.FC<LazyLottieProps> = ({
   }
 
   return (
-    <motion.div
+    <div
       ref={containerRef}
       className={`absolute pointer-events-none ${className}`}
       style={{
         ...containerStyle,
-        y: shouldReduceMotion ? 0 : parallaxY,
-        opacity: shouldReduceMotion ? opacity : scrollOpacity,
+        opacity,
       }}
       aria-hidden="true"
     >
@@ -297,7 +277,7 @@ const LazyLottie: React.FC<LazyLottieProps> = ({
           />
         ) : null}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

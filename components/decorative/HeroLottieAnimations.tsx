@@ -22,7 +22,6 @@ const HeroLottieAnimations: React.FC = () => {
           mobileHeight: '160px',
         }}
         opacity={0.28}
-        parallaxSpeed={0}
         zIndex={1}
         loop={true}
         autoplay={true}

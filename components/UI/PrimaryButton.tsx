@@ -73,16 +73,14 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   };
 
   return (
-    <motion.button
+    <button
       type={type}
       onClick={onClick}
       disabled={disabled}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
-      animate={!shouldReduceMotion && isPressed ? { scale: 0.98 } : { scale: 1 }}
-      transition={{ duration: 0.1 }}
-      className={`${baseStyles} ${fullWidth ? 'w-full' : ''} ${className}`}
+      className={`${baseStyles} ${fullWidth ? 'w-full' : ''} ${!shouldReduceMotion && isPressed ? 'scale-[0.98]' : 'scale-100'} ${className}`}
     >
       <span className="relative z-10 flex items-center gap-2">
         {Icon && (

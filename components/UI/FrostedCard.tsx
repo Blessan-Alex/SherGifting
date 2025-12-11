@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 interface FrostedCardProps {
@@ -56,16 +55,11 @@ const FrostedCard: React.FC<FrostedCardProps> = ({
     variant === 'holiday' 
       ? 'border-[var(--holiday-primary)]/30 bg-[var(--surface-elevated)]' 
       : 'border-[var(--border)] bg-[var(--surface)]'
-  } ${hover && !shouldReduceMotion ? 'hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-1' : ''}`;
+  } ${hover && !shouldReduceMotion ? 'hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-lg)] hover:-translate-y-1 hover:scale-[1.01] hover:shadow-[var(--shadow-glow)]' : ''}`;
 
   return (
-    <motion.div
+    <div
       className={`${baseStyles} ${className}`}
-      whileHover={hover && !shouldReduceMotion ? {
-        scale: 1.01,
-        boxShadow: 'var(--shadow-glow)',
-      } : {}}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
       onClick={onClick}
     >
       {/* Inner glow effect */}
@@ -73,14 +67,14 @@ const FrostedCard: React.FC<FrostedCardProps> = ({
       
       {/* Frosty border highlight on hover */}
       {hover && (
-        <motion.div
-          className="absolute inset-0 border-2 border-[var(--frost)]/0 rounded-3xl pointer-events-none"
-          whileHover={!shouldReduceMotion ? {
-            borderColor: variant === 'holiday' 
-              ? (theme === 'christmas' ? 'rgba(235, 106, 70, 0.4)' : theme === 'newyear' ? 'rgba(252, 211, 77, 0.4)' : 'rgba(6, 182, 212, 0.4)')
-              : 'rgba(255, 255, 255, 0.1)',
-          } : {}}
-          transition={{ duration: 0.3 }}
+        <div
+          className={`absolute inset-0 border-2 rounded-3xl pointer-events-none transition-colors duration-300 ${
+            !shouldReduceMotion 
+              ? variant === 'holiday' 
+                ? (theme === 'christmas' ? 'border-[var(--frost)]/0 hover:border-[rgba(235,106,70,0.4)]' : theme === 'newyear' ? 'border-[var(--frost)]/0 hover:border-[rgba(252,211,77,0.4)]' : 'border-[var(--frost)]/0 hover:border-[rgba(6,182,212,0.4)]')
+                : 'border-[var(--frost)]/0 hover:border-white/10'
+              : 'border-[var(--frost)]/0'
+          }`}
         />
       )}
 
@@ -148,7 +142,7 @@ const FrostedCard: React.FC<FrostedCardProps> = ({
       <div className={`relative z-10 ${padding}`}>
         {children}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

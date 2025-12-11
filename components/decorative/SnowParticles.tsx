@@ -1,55 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useReducedMotion } from '../../lib/animations';
 import { useTheme } from '../../context/ThemeContext';
 import { useEffectsPolicy } from '../../hooks/useEffectsPolicy';
-
-// Snow particle class
-class SnowParticle {
-  x: number;
-  y: number;
-  size: number;
-  speed: number;
-  opacity: number;
-  drift: number;
-  driftSpeed: number;
-
-  constructor(canvasWidth: number) {
-    this.x = Math.random() * canvasWidth;
-    this.y = Math.random() * -100; // Start above viewport
-    this.size = Math.random() * 4 + 2; // 2-6px
-    this.speed = Math.random() * 2 + 0.5; // 0.5-2.5
-    this.opacity = Math.random() * 0.5 + 0.3; // 0.3-0.8
-    this.drift = Math.random() * 0.5 - 0.25; // -0.25 to 0.25
-    this.driftSpeed = Math.random() * 0.02 + 0.01;
-  }
-
-  update(canvasWidth: number, canvasHeight: number, driftEnabled: boolean) {
-    this.y += this.speed;
-    if (driftEnabled) {
-      this.x += this.drift;
-      this.drift += Math.sin(Date.now() * this.driftSpeed) * 0.1;
-    }
-
-    // Reset if off screen
-    if (this.y > canvasHeight) {
-      this.y = -10;
-      this.x = Math.random() * canvasWidth;
-    }
-    if (this.x < 0 || this.x > canvasWidth) {
-      this.x = Math.random() * canvasWidth;
-    }
-  }
-
-  draw(ctx: CanvasRenderingContext2D, color: string) {
-    ctx.save();
-    ctx.globalAlpha = this.opacity;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-}
 
 interface SnowParticlesProps {
   intensity?: 'low' | 'medium' | 'high';
@@ -59,14 +11,35 @@ interface SnowParticlesProps {
   className?: string;
 }
 
+// Inject CSS keyframes for snow animation
+const injectKeyframes = () => {
+  if (document.getElementById('snow-particles-keyframes')) return;
+
+  const style = document.createElement('style');
+  style.id = 'snow-particles-keyframes';
+  style.textContent = `
+    @keyframes snow-fall {
+      0% {
+        transform: translateY(-100vh) translateX(0);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(100vh) translateX(var(--snow-drift, 0px));
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+};
+
 /**
- * SnowParticles - Canvas-based snow particle animation.
+ * SnowParticles - CSS keyframe-based snow particle animation.
  * 
  * Performance optimizations:
  * - Mount policy: Only mounts if allowHeavyEffects is true (disabled on mobile/reduced motion)
- * - IntersectionObserver: Pauses animation when offscreen (stops RAF loop)
- * - FPS throttling: Capped at 30fps for decorative background
- * - Reduced particle count on mobile (if mounted)
+ * - CSS keyframes: No JS animation loops, no RAF, uses CSS animations only
+ * - Reduced particle count: 10-15 max particles
+ * - Animate only transform and opacity (GPU-accelerated)
  * 
  * Mount policy over pause logic: If effects shouldn't run, component doesn't mount at all.
  */
@@ -77,8 +50,6 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
   color,
   className = '',
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const shouldReduceMotion = useReducedMotion();
   const { allowHeavyEffects, isMobile } = useEffectsPolicy();
@@ -88,24 +59,29 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
     return null;
   }
 
-  // Get particle count based on intensity and device
+  // Inject CSS keyframes on mount
+  useEffect(() => {
+    injectKeyframes();
+  }, []);
+
+  // Get particle count based on intensity and device (10-15 max)
   const getParticleCount = () => {
     if (shouldReduceMotion) return 0;
-    // Mobile: prefer not mounting, but if mounted, use fewer particles
+    // Mobile: fewer particles
     if (isMobile) {
       switch (intensity) {
-        case 'low': return 5;
-        case 'high': return 8;
+        case 'low': return 8;
+        case 'high': return 12;
         case 'medium':
-        default: return 6;
+        default: return 10;
       }
     }
-    // Desktop: reduced counts
+    // Desktop: 10-15 particles
     switch (intensity) {
-      case 'low': return 8;
-      case 'high': return 12;
+      case 'low': return 10;
+      case 'high': return 15;
       case 'medium':
-      default: return 10;
+      default: return 12;
     }
   };
 
@@ -117,143 +93,65 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
     return 'rgba(255, 255, 255, 0.7)';
   };
 
-  useEffect(() => {
-    if (!canvasRef.current || !containerRef.current) return;
+  const particleCount = getParticleCount();
+  const snowColor = getSnowColor();
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { alpha: true });
-    if (!ctx) return;
-
-    // Performance optimizations
-    ctx.imageSmoothingEnabled = false;
-
-    const resizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      
-      ctx.scale(dpr, dpr);
-    };
-
-    resizeCanvas();
-    const resizeHandler = () => resizeCanvas();
-    window.addEventListener('resize', resizeHandler, { passive: true });
-
-    // Initialize particles
-    const particleCount = getParticleCount();
-    const particles: SnowParticle[] = [];
-    const canvasWidth = canvas.width / (window.devicePixelRatio || 1);
+  // Generate snowflake particles with random properties
+  const particles = useMemo(() => {
+    if (particleCount === 0) return [];
     
-    for (let i = 0; i < particleCount; i++) {
-      const particle = new SnowParticle(canvasWidth);
-      // Override size if provided
-      if (size) {
-        particle.size = Math.random() * (size.max - size.min) + size.min;
-      }
-      // Override speed if provided
-      if (speed !== undefined) {
-        particle.speed = speed;
-      }
-      particles.push(particle);
-    }
-
-    const snowColor = getSnowColor();
-    let animationFrameId: number | null = null;
-    let lastTime = performance.now();
-    const targetFPS = 20; // Reduced to 20fps for better performance
-    const frameInterval = 1000 / targetFPS;
-    let isRunning = false;
-
-    // Explicit start/stop methods
-    const start = () => {
-      if (isRunning) return;
-      isRunning = true;
-      lastTime = performance.now();
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    const stop = () => {
-      if (!isRunning) return;
-      isRunning = false;
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-    };
-
-    const animate = (currentTime: number) => {
-      if (!isRunning) return;
-
-      const deltaTime = currentTime - lastTime;
+    return Array.from({ length: particleCount }, (_, i) => {
+      const particleSize = size 
+        ? Math.random() * (size.max - size.min) + size.min
+        : Math.random() * 4 + 2; // 2-6px default
       
-      // FPS throttle: only draw if enough time has passed
-      if (deltaTime >= frameInterval) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const baseDuration = speed 
+        ? Math.max(5, 15 / speed) // Adjust duration based on speed prop
+        : Math.random() * 5 + 10; // 10-15s default
+      
+      const drift = (Math.random() - 0.5) * 100; // -50px to 50px horizontal drift
+      const left = Math.random() * 100; // 0-100% horizontal position
+      const delay = Math.random() * 5; // 0-5s delay for staggered start
+      const opacity = Math.random() * 0.5 + 0.3; // 0.3-0.8
 
-        const canvasWidth = canvas.width / (window.devicePixelRatio || 1);
-        const canvasHeight = canvas.height / (window.devicePixelRatio || 1);
+      return {
+        id: `snow-${i}`,
+        size: particleSize,
+        left: `${left}%`,
+        duration: `${baseDuration}s`,
+        delay: `${delay}s`,
+        drift: `${drift}px`,
+        opacity,
+      };
+    });
+  }, [particleCount, size, speed, shouldReduceMotion]);
 
-        particles.forEach((particle) => {
-          particle.update(canvasWidth, canvasHeight, !shouldReduceMotion);
-          particle.draw(ctx, snowColor);
-        });
-
-        lastTime = currentTime - (deltaTime % frameInterval);
-      }
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    // IntersectionObserver to pause when offscreen
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            start();
-          } else {
-            stop();
-          }
-        });
-      },
-      {
-        rootMargin: '50px', // Start/stop 50px before entering/exiting viewport
-      }
-    );
-
-    observer.observe(containerRef.current);
-
-    // Start animation initially if visible
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-      if (isVisible) {
-        start();
-      }
-    }
-
-    return () => {
-      window.removeEventListener('resize', resizeHandler);
-      observer.disconnect();
-      stop();
-    };
-  }, [intensity, speed, size, color, theme, shouldReduceMotion]);
+  if (particles.length === 0) {
+    return null;
+  }
 
   return (
-    <div ref={containerRef} className="absolute inset-0 pointer-events-none">
-      <canvas
-        ref={canvasRef}
-        className={`absolute inset-0 ${className}`}
-        style={{ 
-          willChange: 'transform',
-          imageRendering: 'pixelated',
-        }}
-        aria-hidden="true"
-      />
+    <div className={`absolute inset-0 pointer-events-none ${className}`} aria-hidden="true">
+      {particles.map((particle) => (
+        <div
+          key={particle.id}
+          className="absolute rounded-full"
+          style={{
+            left: particle.left,
+            top: '-10px',
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            backgroundColor: snowColor,
+            opacity: particle.opacity,
+            '--snow-drift': particle.drift,
+            animation: shouldReduceMotion 
+              ? 'none' 
+              : `snow-fall ${particle.duration} linear infinite`,
+            animationDelay: particle.delay,
+            willChange: shouldReduceMotion ? 'auto' : 'transform, opacity',
+          } as React.CSSProperties}
+        />
+      ))}
     </div>
   );
 };
@@ -273,9 +171,3 @@ export default React.memo(SnowParticles, (prevProps, nextProps) => {
     prevProps.className === nextProps.className
   );
 });
-
-
-
-
-
-

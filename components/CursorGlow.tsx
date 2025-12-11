@@ -35,7 +35,19 @@ export function CursorGlow({ children, variant = 'default' }: CursorGlowProps) {
     const glow = glowRef.current;
     if (!container || !glow) return;
 
+    let lastUpdateTime = 0;
+    const throttleInterval = 32; // Update max every 32ms (~30fps)
+
     const onPointerMove = (e: PointerEvent) => {
+      const now = performance.now();
+      
+      // Throttle: only update if enough time has passed
+      if (now - lastUpdateTime < throttleInterval) {
+        return;
+      }
+      
+      lastUpdateTime = now;
+      
       const rect = container.getBoundingClientRect();
       // Store position in ref (no state update = no re-render)
       posRef.current = { 
@@ -98,7 +110,7 @@ export function CursorGlow({ children, variant = 'default' }: CursorGlowProps) {
   };
 
   const gradient = getGradientColors();
-  const blurClass = variant === 'spotlight' ? 'blur-[100px]' : 'blur-3xl';
+  const blurClass = variant === 'spotlight' ? 'blur-[60px]' : 'blur-2xl';
   const opacityClass = variant === 'spotlight' ? 'opacity-70' : 'opacity-60';
 
   return (

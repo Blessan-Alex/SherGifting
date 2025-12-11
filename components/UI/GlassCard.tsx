@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -59,14 +59,12 @@ const GlassCard: React.FC<GlassCardProps> = ({
   const shouldShowGlow = glow || variant === 'gift' || variant === 'balance' || variant === 'holiday';
 
   return (
-    <motion.div 
-      className={`relative ${styles.background} backdrop-blur-xl ${styles.border} shadow-2xl rounded-3xl overflow-hidden ${className}`}
-      whileHover={hover && !shouldReduceMotion ? {
-        scale: 1.01,
-        boxShadow: 'var(--shadow-glow)',
-        borderColor: 'var(--border-hover)',
-      } : {}}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+    <div 
+      className={`relative ${styles.background} backdrop-blur-xl ${styles.border} shadow-2xl rounded-3xl overflow-hidden transition-all duration-300 ease-out ${
+        hover && !shouldReduceMotion 
+          ? 'hover:scale-[1.01] hover:shadow-[var(--shadow-glow)] hover:border-[var(--border-hover)]' 
+          : ''
+      } ${className}`}
       onClick={onClick}
     >
       <div className="absolute inset-0 border border-white/5 rounded-3xl pointer-events-none" />
@@ -79,7 +77,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
       <div className={`relative z-10 ${padding}`}>
         {children}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
