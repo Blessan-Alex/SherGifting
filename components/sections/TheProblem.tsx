@@ -2,8 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import GlassCard from '../UI/GlassCard';
+import { useEffectsPolicy } from '../../hooks/useEffectsPolicy';
 
 const TheProblem: React.FC = () => {
+  const { isMobile } = useEffectsPolicy();
+  
   const problems = [
     {
       title: "The 'Lost Card' Problem",
@@ -69,8 +72,10 @@ const TheProblem: React.FC = () => {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="relative h-[400px] lg:h-[500px] w-full"
           >
-            {/* Soft red glow background */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#BE123C]/20 to-transparent rounded-full blur-[70px] pointer-events-none" />
+            {/* Soft red glow background - hidden on mobile */}
+            {!isMobile && (
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#BE123C]/20 to-transparent rounded-full blur-[70px] pointer-events-none" />
+            )}
             
             <GlassCard className="h-full flex flex-col items-center justify-center text-center relative old-way-card">
               {/* Static gradient background */}

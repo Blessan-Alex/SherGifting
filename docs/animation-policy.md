@@ -1,3 +1,4 @@
+
 # Animation Performance Policy
 
 This document outlines animation guidelines and performance best practices for the SherGifting app.
