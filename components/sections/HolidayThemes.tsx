@@ -31,7 +31,7 @@ const HolidayThemes: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: '-300px' }}
           transition={{ duration: 0.6 }}
           className="text-center mb-12 lg:mb-16"
         >
@@ -47,7 +47,7 @@ const HolidayThemes: React.FC = () => {
               key={themeOption.id}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-100px' }}
+              viewport={{ once: true, margin: '-300px' }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
               <ThemeCard
@@ -64,7 +64,7 @@ const HolidayThemes: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: '-300px' }}
           transition={{ duration: 0.6, delay: 0.3 }}
           className="text-center mt-8"
         >
@@ -78,6 +78,8 @@ const HolidayThemes: React.FC = () => {
 };
 
 export default HolidayThemes;
+
+
 
 
 

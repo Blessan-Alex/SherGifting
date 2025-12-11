@@ -23,7 +23,7 @@ const TheProblem: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: '-300px' }}
             transition={{ duration: 0.6 }}
             className="space-y-8"
           >
@@ -40,7 +40,7 @@ const TheProblem: React.FC = () => {
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-100px' }}
+                  viewport={{ once: true, margin: '-300px' }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                 >
                   <GlassCard className="group hover:border-[#BE123C]/20 transition-colors duration-300">
@@ -65,7 +65,7 @@ const TheProblem: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: '-300px' }}
             transition={{ duration: 0.6 }}
             className="relative h-[400px] lg:h-[500px] w-full"
           >

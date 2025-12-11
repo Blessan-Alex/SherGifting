@@ -99,7 +99,7 @@ const RecipientExperience: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: '-300px' }}
             transition={{ duration: 0.6 }}
             className="text-center lg:text-left"
           >
@@ -143,7 +143,7 @@ const RecipientExperience: React.FC = () => {
             style={{ y }}
             initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: '-100px' }}
+            viewport={{ once: true, margin: '-300px' }}
             transition={{ duration: 0.6 }}
             className="flex flex-col items-center lg:items-end gap-4"
           >

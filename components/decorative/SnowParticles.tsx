@@ -90,22 +90,22 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
 
   // Get particle count based on intensity and device
   const getParticleCount = () => {
-    if (shouldReduceMotion) return 5;
+    if (shouldReduceMotion) return 0;
     // Mobile: prefer not mounting, but if mounted, use fewer particles
     if (isMobile) {
       switch (intensity) {
-        case 'low': return 10;
-        case 'high': return 15;
+        case 'low': return 5;
+        case 'high': return 8;
         case 'medium':
-        default: return 12;
+        default: return 6;
       }
     }
     // Desktop: reduced counts
     switch (intensity) {
-      case 'low': return 20;
-      case 'high': return 30;
+      case 'low': return 8;
+      case 'high': return 12;
       case 'medium':
-      default: return 25;
+      default: return 10;
     }
   };
 
@@ -165,7 +165,7 @@ const SnowParticles: React.FC<SnowParticlesProps> = ({
     const snowColor = getSnowColor();
     let animationFrameId: number | null = null;
     let lastTime = performance.now();
-    const targetFPS = 30; // Reduced from 60 to 30fps for decorative background
+    const targetFPS = 20; // Reduced to 20fps for better performance
     const frameInterval = 1000 / targetFPS;
     let isRunning = false;
 

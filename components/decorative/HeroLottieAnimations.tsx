@@ -30,27 +30,6 @@ const HeroLottieAnimations: React.FC = () => {
         blendMode="soft-light"
         priority="high"
       />
-
-      {/* Wind Chimes - Top center-right, subtle accent */}
-      {/* Low priority: load on scroll/idle */}
-      <LazyLottie
-        src="/assets/Christmas wind chimes.lottie"
-        position={{ top: '15%', right: '15%' }}
-        size={{
-          width: '140px',
-          height: '140px',
-          mobileWidth: '90px',
-          mobileHeight: '90px',
-        }}
-        opacity={0.2}
-        parallaxSpeed={0}
-        zIndex={1}
-        loop={true}
-        autoplay={true}
-        speed={0.85}
-        blendMode="soft-light"
-        priority="low"
-      />
     </div>
   );
 };

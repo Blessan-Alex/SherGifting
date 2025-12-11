@@ -62,7 +62,7 @@ const HowItWorks: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: '-300px' }}
           transition={{ duration: 0.6 }}
           className="text-center mb-12 lg:mb-16"
         >
@@ -82,7 +82,7 @@ const HowItWorks: React.FC = () => {
                 key={index}
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
+                viewport={{ once: true, margin: '-300px' }}
                 transition={{ duration: 0.6, delay: index * 0.15 }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
@@ -181,7 +181,7 @@ const HowItWorks: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
+          viewport={{ once: true, margin: '-300px' }}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-center"
         >
